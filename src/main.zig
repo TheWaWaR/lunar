@@ -1,12 +1,34 @@
-//! By convention, main.zig is where your main function lives in the case that
-//! you are building an executable. If you are making a library, the convention
-//! is to delete this file and start with root.zig instead.
-
-/// This imports the separate module containing `root.zig`. Take a look in `build.zig` for details.
-const lib = @import("lunar_lib");
 const std = @import("std");
+const jok = @import("jok");
 
-pub fn main() !void {
-    const result = try lib.run();
-    std.log.info("Run result = {}", .{result});
+const Engine = @import("wasmtime.zig").Engine;
+
+pub fn init(ctx: jok.Context) !void {
+    // your init code
+    _ = ctx;
+    var store_data: usize = 0;
+    const engine = try Engine.new();
+    const store = try engine.newStore(@ptrCast(&store_data));
+    std.log.info("engine: {*}", .{store.ptr});
+}
+
+pub fn event(ctx: jok.Context, e: jok.Event) !void {
+    // your event processing code
+    _ = ctx;
+    _ = e;
+}
+
+pub fn update(ctx: jok.Context) !void {
+    // your game state updating code
+    _ = ctx;
+}
+
+pub fn draw(ctx: jok.Context) !void {
+    // your drawing code
+    _ = ctx;
+}
+
+pub fn quit(ctx: jok.Context) void {
+    // your deinit code
+    _ = ctx;
 }
