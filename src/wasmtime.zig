@@ -1,3 +1,4 @@
+const std = @import("std");
 const cdef = @import("wasmtime/cdef.zig");
 
 pub const WasmtimeError = error{
@@ -18,6 +19,16 @@ const ValTypeVec = cdef.ValTypeVec;
 pub const Extern = cdef.Extern;
 pub const Value = cdef.Value;
 pub const CallbackFn = cdef.CallbackFn;
+
+var err_msg_buf: [1024]u8 = undefined;
+var err_msg: cdef.ByteVec = .{
+    .size = 0,
+    .data = err_msg_buf[0..],
+};
+fn print_err(err_ptr: Ptr) void {
+    cdef.wasmtime_error_message(err_ptr, &err_msg);
+    std.log.err("error msg: {s}", .{err_msg.data[0..err_msg.size]});
+}
 
 pub const Engine = struct {
     ptr: *anyopaque,
@@ -54,15 +65,18 @@ pub const Linker = struct {
         }
     }
 
-    pub fn instantiate(self: Self, context: StoreContext, module: Module, instance: Instance) !void {
+    pub fn instantiate(self: Self, context: StoreContext, module: Module) !Instance {
         var trap: ?*anyopaque = null;
-        const err_ptr_opt = cdef.wasmtime_linker_instantiate(self.ptr, context.ptr, module.ptr, instance.ptr, &trap);
+        var instance: Instance = undefined;
+        const err_ptr_opt = cdef.wasmtime_linker_instantiate(self.ptr, context.ptr, module.ptr, &instance.inner, &trap);
         if (trap != null) {
-            return error.NewInstanceError;
-        }
-        if (err_ptr_opt) |_| {
             return error.InstantiateError;
         }
+        if (err_ptr_opt) |err_ptr| {
+            print_err(err_ptr);
+            return error.InstantiateError;
+        }
+        return instance;
     }
 
     pub fn defineInstance(self: Self, context: StoreContext, name: []const u8, instance: Instance) !void {
@@ -119,7 +133,7 @@ pub const Func = struct {
             &trap,
         );
         if (trap != null) {
-            return error.NewInstanceError;
+            return error.FuncCallError;
         }
         if (err_ptr_opt) |_| {
             return error.FuncCallError;
@@ -143,8 +157,8 @@ pub const FuncType = struct {
     }
 
     pub fn new(params: []ValType, results: []ValType) FuncType {
-        const params_wrapper = Self.vec_new(params);
-        const results_wrapper = Self.vec_new(results);
+        var params_wrapper = Self.vec_new(params);
+        var results_wrapper = Self.vec_new(results);
         const ptr = cdef.wasm_functype_new(&params_wrapper, &results_wrapper);
         return FuncType{ .ptr = ptr };
     }
@@ -190,14 +204,15 @@ pub const Instance = struct {
         if (trap != null) {
             return error.NewInstanceError;
         }
-        if (err_ptr_opt) |_| {
+        if (err_ptr_opt) |err_ptr| {
+            print_err(err_ptr);
             return error.NewInstanceError;
         } else {
             return instance;
         }
     }
 
-    pub fn expotrGet(self: Self, context: StoreContext, name: []const u8) ?Extern {
+    pub fn exportGet(self: Self, context: StoreContext, name: []const u8) ?Extern {
         var run: Extern = undefined;
         if (cdef.wasmtime_instance_export_get(context.ptr, &self.inner, name.ptr, name.len, &run)) {
             return run;
@@ -244,7 +259,7 @@ pub const Module = struct {
     const Self = @This();
 
     pub fn new(engine: Engine, binary: []const u8) !Module {
-        const ptr: *anyopaque = undefined;
+        var ptr: *anyopaque = undefined;
         const err_ptr_opt = cdef.wasmtime_module_new(engine.ptr, binary.ptr, binary.len, &ptr);
         if (err_ptr_opt) |_| {
             return error.NewModuleError;

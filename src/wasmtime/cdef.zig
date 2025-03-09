@@ -17,6 +17,13 @@ pub extern "c" fn wasm_engine_new_with_config(Ptr) Ptr;
 ///////////////////////////////////////////////////////////////////////////////
 // wasmtime/error.h
 
+pub const ByteVec = extern struct {
+    size: usize,
+    data: [*]u8,
+};
+// fn(error, message)
+pub extern "c" fn wasmtime_error_message(ConstPtr, Ptr) void;
+
 ///////////////////////////////////////////////////////////////////////////////
 // wasmtime/linker.h
 
@@ -75,13 +82,14 @@ pub extern "c" fn wasmtime_module_delete(Ptr) void;
 // fn(engine, wasm, wasm_len) -> error
 pub extern "c" fn wasmtime_module_validate(Ptr, ConstPtr, usize) ?Ptr;
 
+// func.h : wasmtime_func_callback_t
 // fn(env, caller, args, nargs, results, nresults) -> trap
 pub const CallbackFn = *const fn (
     env: Ptr,
     caller: Ptr,
-    args: ConstPtr,
+    args: [*]const Value,
     nargs: usize,
-    results: Ptr,
+    results: [*]Value,
     nresults: usize,
 ) callconv(.C) ?Ptr;
 
@@ -96,8 +104,20 @@ pub const ValueUnion = extern union {
     wasmtime_v128: [16]u8,
 };
 
+pub const ValueKind = enum(u8) {
+    i32 = 0,
+    i64 = 1,
+    f32 = 2,
+    f64 = 3,
+    v128 = 4,
+    funcref = 5,
+    externref = 6,
+    anyref = 7,
+};
+
+// val.h : wasmtime_val_t
 pub const Value = extern struct {
-    kind: u8,
+    kind: ValueKind,
     of: ValueUnion,
 };
 
@@ -108,11 +128,19 @@ pub const ExternUnion = extern union {
     memory: Memory,
     sharedmemory: Ptr,
 };
+pub const ExternKind = enum(u8) {
+    extern_func = 0,
+    extern_global = 1,
+    extern_table = 2,
+    extern_memory = 3,
+    extern_sharedmemory = 4,
+};
 pub const Extern = extern struct {
-    kind: u8,
+    kind: ExternKind,
     of: ExternUnion,
 };
 
+// extern.h : wasmtime_func_t
 pub const Func = extern struct {
     store_id: u64,
     __private: usize,
@@ -143,12 +171,33 @@ pub extern "c" fn wasm_functype_new(Ptr, Ptr) Ptr;
 // fn void wasm_functype_delete(wasm_functype_t *)
 pub extern "c" fn wasm_functype_delete(Ptr) void;
 
-pub extern "c" fn wasm_valtype_new_i32() Ptr;
-pub extern "c" fn wasm_valtype_new_i64() Ptr;
-pub extern "c" fn wasm_valtype_new_f32() Ptr;
-pub extern "c" fn wasm_valtype_new_f64() Ptr;
-pub extern "c" fn wasm_valtype_new_externref() Ptr;
-pub extern "c" fn wasm_valtype_new_funcref() Ptr;
+const WasmValKind = enum(u8) {
+    i32,
+    i64,
+    f32,
+    f64,
+    externref = 128,
+    funcref,
+};
+pub extern "c" fn wasm_valtype_new(u8) Ptr;
+pub fn wasm_valtype_new_i32() Ptr {
+    return wasm_valtype_new(@intFromEnum(WasmValKind.i32));
+}
+pub fn wasm_valtype_new_i64() Ptr {
+    return wasm_valtype_new(@intFromEnum(WasmValKind.i64));
+}
+pub fn wasm_valtype_new_f32() Ptr {
+    return wasm_valtype_new(@intFromEnum(WasmValKind.f32));
+}
+pub fn wasm_valtype_new_f64() Ptr {
+    return wasm_valtype_new(@intFromEnum(WasmValKind.f64));
+}
+pub fn wasm_valtype_new_externref() Ptr {
+    return wasm_valtype_new(@intFromEnum(WasmValKind.externref));
+}
+pub fn wasm_valtype_new_funcref() Ptr {
+    return wasm_valtype_new(@intFromEnum(WasmValKind.funcref));
+}
 
 // fn void wasm_valtype_vec_new(wasm_valtype_vec_t *out, size_t, wasm_valtype_t *const[])
 pub extern "c" fn wasm_valtype_vec_new(Ptr, usize, Ptr) void;

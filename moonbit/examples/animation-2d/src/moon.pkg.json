@@ -10,11 +10,7 @@
         "lunar_update",
         "lunar_draw",
         "lunar_quit"
-      ],
-      "import-memory": {
-        "module": "env",
-        "name": "memory"
-      }
+      ]
     }
   }
 }

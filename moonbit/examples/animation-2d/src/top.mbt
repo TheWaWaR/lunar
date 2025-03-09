@@ -1,5 +1,5 @@
 pub fn lunar_init(ctx: UInt64) -> Unit {
-  println("> moon.init: \{ctx}")
+  println("moon.init")
 }
 
 pub fn lunar_event(ctx: UInt64, e: UInt64) -> Unit {
