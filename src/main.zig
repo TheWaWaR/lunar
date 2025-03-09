@@ -47,12 +47,13 @@ fn spectest_print_char(
     results: [*]w.Value,
     nresults: usize,
 ) callconv(.C) ?*anyopaque {
-    _ = env;
+    // _ = env;
     _ = caller;
     _ = results;
     _ = nresults;
 
-    std.log.info("spectest_print_char(): args({})={}", .{ nargs, args[0].of.i32 });
+    const value: *i32 = @alignCast(@ptrCast(env));
+    std.log.info("spectest_print_char(): args({})={}, env={}", .{ nargs, args[0].of.i32, value.* });
     return null;
 }
 
