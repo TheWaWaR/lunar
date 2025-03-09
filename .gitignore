@@ -1,3 +1,6 @@
 .zig-cache/
 zig-out/
-wasmtime/*.tar.xz
+
+
+## For: wasmtime-c-api
+wasmtime/*

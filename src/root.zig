@@ -2,12 +2,12 @@
 //! you are making an executable, the convention is to delete this file and
 //! start with main.zig instead.
 const std = @import("std");
-const testing = std.testing;
 
-pub export fn add(a: i32, b: i32) i32 {
-    return a + b;
-}
+const Engine = @import("wasmtime.zig").Engine;
 
-test "basic add functionality" {
-    try testing.expect(add(3, 7) == 10);
+pub fn run() !void {
+    var store_data: usize = 0;
+    const engine = try Engine.new();
+    const store = try engine.newStore(@ptrCast(&store_data));
+    std.log.info("engine: {*}", .{store.ptr});
 }

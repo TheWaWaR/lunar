@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -27,6 +28,13 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    const arch = @tagName(builtin.cpu.arch);
+    const os_tag = @tagName(builtin.os.tag);
+    const wasmtime_version = "v30.0.2";
+    const wasmtime_dir = b.path("wasmtime/wasmtime-" ++ wasmtime_version ++ "-" ++ arch ++ "-" ++ os_tag ++ "-c-api");
+    lib_mod.addObjectFile(wasmtime_dir.path(b, "lib/libwasmtime.a"));
+    lib_mod.addIncludePath(wasmtime_dir.path(b, "include"));
 
     // We will also create a module for our other entry point, 'main.zig'.
     const exe_mod = b.createModule(.{
