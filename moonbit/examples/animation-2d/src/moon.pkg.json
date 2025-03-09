@@ -1,0 +1,20 @@
+{
+  "import": [
+    "lunar/lib"
+  ],
+  "link": {
+    "wasm": {
+      "exports": [ 
+        "lunar_init", 
+        "lunar_event",
+        "lunar_update",
+        "lunar_draw",
+        "lunar_quit"
+      ],
+      "import-memory": {
+        "module": "env",
+        "name": "memory"
+      }
+    }
+  }
+}
