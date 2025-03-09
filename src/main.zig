@@ -1,14 +1,16 @@
 const std = @import("std");
 const jok = @import("jok");
 
-const Engine = @import("wasmtime.zig").Engine;
+const wasmtime = @import("wasmtime.zig");
+const Engine = wasmtime.Engine;
+const Store = wasmtime.Store;
 
 pub fn init(ctx: jok.Context) !void {
     // your init code
     _ = ctx;
     var store_data: usize = 0;
     const engine = try Engine.new();
-    const store = try engine.newStore(@ptrCast(&store_data));
+    const store = try Store.new(engine, @ptrCast(&store_data));
     std.log.info("engine: {*}", .{store.ptr});
 }
 
