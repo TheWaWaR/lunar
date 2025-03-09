@@ -3,4 +3,4 @@ zig-out/
 
 
 ## For: wasmtime-c-api
-wasmtime/*
+wasmtime/
