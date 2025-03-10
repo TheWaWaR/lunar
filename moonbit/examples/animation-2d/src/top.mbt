@@ -1,19 +1,17 @@
 pub fn lunar_init() -> Unit {
-  println("moon.init")
+  @lib.log("moon.init")
 }
 
-pub fn lunar_event(event_type: UInt) -> Unit {
-  println("> moon.event: \{event_type}")
-}
+pub fn lunar_event(_: UInt) -> Unit { }
 
 pub fn lunar_update() -> Unit {
-  println("> moon.update")
+  @lib.log("> moon.update")
 }
 
 pub fn lunar_draw() -> Unit {
-  println("> moon.draw")
+  @lib.log("> moon.draw")
 }
 
 pub fn lunar_quit() -> Unit {
-  println("> moon.init")
+  @lib.log("> moon.init")
 }

@@ -1,6 +1,7 @@
 {
   "import": [
-    "lunar/lib"
+    "lunar/lib",
+    "peter-jerry-ye/wasi"
   ],
   "link": {
     "wasm": {
@@ -10,7 +11,11 @@
         "lunar_update",
         "lunar_draw",
         "lunar_quit"
-      ]
+      ],
+      "import-memory": {
+        "module": "env",
+        "name": "memory"
+      }
     }
   }
 }

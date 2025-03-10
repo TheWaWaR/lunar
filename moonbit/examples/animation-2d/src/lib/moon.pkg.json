@@ -1,1 +1,5 @@
-{}
+{
+  "import": [
+    "peter-jerry-ye/wasi"
+  ]
+}

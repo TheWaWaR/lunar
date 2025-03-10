@@ -59,12 +59,6 @@ pub const Linker = struct {
         cdef.wasmtime_linker_delete(self.ptr);
     }
 
-    pub fn defineWasi(self: Self) !void {
-        if (cdef.wasmtime_linker_define_wasi(self.ptr)) |_| {
-            return error.DefineWasiError;
-        }
-    }
-
     pub fn instantiate(self: Self, context: StoreContext, module: Module) !Instance {
         var trap: ?*anyopaque = null;
         var instance: Instance = undefined;
@@ -77,6 +71,14 @@ pub const Linker = struct {
             return error.InstantiateError;
         }
         return instance;
+    }
+
+    // pub fn define(self: Self, module_name: []const u8, extern_name: []const u8, extern_value: Extern) !void { }
+
+    pub fn defineWasi(self: Self) !void {
+        if (cdef.wasmtime_linker_define_wasi(self.ptr)) |_| {
+            return error.DefineWasiError;
+        }
     }
 
     pub fn defineInstance(self: Self, context: StoreContext, name: []const u8, instance: Instance) !void {

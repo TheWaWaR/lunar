@@ -31,6 +31,8 @@ pub extern "c" fn wasmtime_error_message(ConstPtr, Ptr) void;
 pub extern "c" fn wasmtime_linker_new(Ptr) Ptr;
 // fn(linker)
 pub extern "c" fn wasmtime_linker_delete(Ptr) void;
+// fn(linker, store, module, module_len, name, name_len, item) -> error
+pub extern "c" fn wasmtime_linker_define(Ptr, Ptr, ConstPtr, usize, ConstPtr, usize, Ptr) ?Ptr;
 // fn(linker) -> error
 pub extern "c" fn wasmtime_linker_define_wasi(Ptr) ?Ptr;
 // fn(linker, store_context, module, instance, trap) -> error
@@ -39,6 +41,10 @@ pub extern "c" fn wasmtime_linker_instantiate(ConstPtr, Ptr, ConstPtr, Ptr, Trap
 pub extern "c" fn wasmtime_linker_define_instance(Ptr, Ptr, ConstPtr, usize, ConstPtr) ?Ptr;
 // fn(linker, module, module_len, name, name_len, ty, cb, data, finalizer) -> error
 pub extern "c" fn wasmtime_linker_define_func(Ptr, ConstPtr, usize, ConstPtr, usize, ConstPtr, ConstPtr, Ptr, ?Ptr) ?Ptr;
+
+///////////////////////////////////////////////////////////////////////////////
+// wasmtime/memory.h
+pub extern "c" fn wasmtime_memorytype_minimum(Ptr) u64;
 
 ///////////////////////////////////////////////////////////////////////////////
 // wasmtime/func.h
