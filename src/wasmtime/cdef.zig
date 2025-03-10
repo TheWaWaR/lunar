@@ -87,9 +87,11 @@ pub extern "c" fn wasmtime_module_validate(Ptr, ConstPtr, usize) ?Ptr;
 pub const CallbackFn = *const fn (
     env: Ptr,
     caller: Ptr,
-    args: [*]const Value,
+    // no alignment
+    args: [*c]const Value,
     nargs: usize,
-    results: [*]Value,
+    // no alignment
+    results: [*c]Value,
     nresults: usize,
 ) callconv(.C) ?Ptr;
 
@@ -119,6 +121,19 @@ pub const ValueKind = enum(u8) {
 pub const Value = extern struct {
     kind: ValueKind,
     of: ValueUnion,
+
+    pub fn newI32(value: i32) Value {
+        return Value{ .kind = .i32, .of = .{ .i32 = value } };
+    }
+    pub fn newI64(value: i32) Value {
+        return Value{ .kind = .i64, .of = .{ .i64 = value } };
+    }
+    pub fn newF32(value: f32) Value {
+        return Value{ .kind = .f32, .of = .{ .f32 = value } };
+    }
+    pub fn newF64(value: f32) Value {
+        return Value{ .kind = .f64, .of = .{ .f64 = value } };
+    }
 };
 
 pub const ExternUnion = extern union {

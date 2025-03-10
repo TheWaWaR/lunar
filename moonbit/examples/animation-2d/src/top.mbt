@@ -1,19 +1,19 @@
-pub fn lunar_init(ctx: UInt64) -> Unit {
+pub fn lunar_init() -> Unit {
   println("moon.init")
 }
 
-pub fn lunar_event(ctx: UInt64, e: UInt64) -> Unit {
-  println("> moon.event: \{ctx}, \{e}")
+pub fn lunar_event(event_type: UInt) -> Unit {
+  println("> moon.event: \{event_type}")
 }
 
-pub fn lunar_update(ctx: UInt64) -> Unit {
-  println("> moon.update: \{ctx}")
+pub fn lunar_update() -> Unit {
+  println("> moon.update")
 }
 
-pub fn lunar_draw(ctx: UInt64) -> Unit {
-  println("> moon.draw: \{ctx}")
+pub fn lunar_draw() -> Unit {
+  println("> moon.draw")
 }
 
-pub fn lunar_quit(ctx: UInt64) -> Unit {
-  println("> moon.init: \{ctx}")
+pub fn lunar_quit() -> Unit {
+  println("> moon.init")
 }

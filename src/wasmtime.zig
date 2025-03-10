@@ -104,7 +104,8 @@ pub const Linker = struct {
             data,
             null,
         );
-        if (err_ptr_opt) |_| {
+        if (err_ptr_opt) |err_ptr| {
+            print_err(err_ptr);
             return error.DefineFuncError;
         }
     }
@@ -135,7 +136,8 @@ pub const Func = struct {
         if (trap != null) {
             return error.FuncCallError;
         }
-        if (err_ptr_opt) |_| {
+        if (err_ptr_opt) |err_ptr| {
+            print_err(err_ptr);
             return error.FuncCallError;
         }
     }
@@ -261,7 +263,8 @@ pub const Module = struct {
     pub fn new(engine: Engine, binary: []const u8) !Module {
         var ptr: *anyopaque = undefined;
         const err_ptr_opt = cdef.wasmtime_module_new(engine.ptr, binary.ptr, binary.len, &ptr);
-        if (err_ptr_opt) |_| {
+        if (err_ptr_opt) |err_ptr| {
+            print_err(err_ptr);
             return error.NewModuleError;
         } else {
             return Module{ .ptr = ptr };
