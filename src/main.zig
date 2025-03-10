@@ -24,6 +24,7 @@ pub fn init(ctx: jok.Context) !void {
     const store = try w.Store.new(engine, @ptrCast(&store_data));
     store_context = store.context();
     const linker = w.Linker.new(engine);
+    defer linker.destroy();
     std.log.info("store context: {*}", .{store_context.ptr});
 
     const file = try std.fs.cwd().openFile("moonbit/examples/animation-2d/target/wasm/release/build/lunar.wasm", .{});
@@ -82,4 +83,6 @@ pub fn quit(ctx: jok.Context) void {
     lunar_quit.call(store_context, &.{}, &.{}) catch {
         std.log.err("call lunar_quit error", .{});
     };
+    engine.destroy();
+    std.log.info("quit", .{});
 }
