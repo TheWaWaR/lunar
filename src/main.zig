@@ -29,7 +29,9 @@ pub fn get_init_ctx() jok.Context {
 
 pub fn init(ctx: jok.Context) !void {
     init_ctx = ctx;
-    try setupWasmtime(ctx);
+    const args = try std.process.argsAlloc(ctx.allocator());
+    defer std.process.argsFree(ctx.allocator(), args);
+    try setupWasmtime(ctx, args);
     // your init code
     try lunar_init.call(store_context, &.{}, &.{});
 
@@ -67,7 +69,7 @@ pub fn quit(ctx: jok.Context) void {
     std.log.info("quit success", .{});
 }
 
-fn setupWasmtime(ctx: jok.Context) !void {
+fn setupWasmtime(ctx: jok.Context, args: [][:0]u8) !void {
     engine = try w.Engine.new();
     const store = try w.Store.new(engine, @ptrCast(&store_data));
     store_context = store.context();
@@ -79,7 +81,9 @@ fn setupWasmtime(ctx: jok.Context) !void {
     const linker = w.Linker.new(engine);
     defer linker.destroy();
 
-    const file = try std.fs.cwd().openFile("moonbit/examples/animation-2d/target/wasm/release/build/lunar.wasm", .{});
+    const wasm_path = args[1];
+    std.log.info("wasm path: {s}", .{wasm_path});
+    const file = try std.fs.cwd().openFile(wasm_path, .{});
     defer file.close();
     const wasm_data = try file.readToEndAlloc(ctx.allocator(), MAX_WASM_SIZE);
     defer ctx.allocator().free(wasm_data);
