@@ -72,14 +72,16 @@ pub extern "c" fn wasmtime_instance_export_get(Ptr, ConstPtr, ConstPtr, usize, P
 
 // fn(engine, data, finalizer) -> store
 pub extern "c" fn wasmtime_store_new(Ptr, Ptr, ?Ptr) ?Ptr;
-// fn(store) -> context
+// fn(store) -> store_context
 pub extern "c" fn wasmtime_store_context(Ptr) Ptr;
 // fn(store)
 pub extern "c" fn wasmtime_store_delete(Ptr) void;
-// fn(context) -> data
+// fn(store_context) -> data
 pub extern "c" fn wasmtime_context_get_data(Ptr) Ptr;
-// fn(context, data)
+// fn(store_context, data)
 pub extern "c" fn wasmtime_context_set_data(Ptr, Ptr) void;
+// fn(store_context, wasi_config) -> error
+pub extern "c" fn wasmtime_context_set_wasi(Ptr, Ptr) ?Ptr;
 
 ///////////////////////////////////////////////////////////////////////////////
 // wasmtime/module.h
@@ -232,3 +234,8 @@ pub const ValTypeVec = extern struct {
     size: usize,
     data: ?*Ptr,
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// fn() -> wasi_config
+pub extern "c" fn wasi_config_new() Ptr;
+pub extern "c" fn wasi_config_delete(Ptr) void;

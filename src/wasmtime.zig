@@ -13,6 +13,7 @@ pub const WasmtimeError = error{
     NewInstanceError,
     FuncCallError,
     NewMemoryError,
+    SetWasiError,
 };
 
 const Ptr = cdef.Ptr;
@@ -304,6 +305,14 @@ pub const StoreContext = struct {
     pub fn setData(self: StoreContext, data: *anyopaque) void {
         cdef.wasmtime_context_set_data(self.ptr, data);
     }
+
+    pub fn setWasi(self: StoreContext, config: WasiConfig) !void {
+        const err_ptr_opt = cdef.wasmtime_context_set_wasi(self.ptr, config.ptr);
+        if (err_ptr_opt) |err_ptr| {
+            print_err(err_ptr);
+            return error.SetWasiError;
+        }
+    }
 };
 
 pub const Module = struct {
@@ -324,5 +333,16 @@ pub const Module = struct {
 
     pub fn destroy(self: Module) void {
         cdef.wasmtime_module_delete(self.ptr);
+    }
+};
+
+pub const WasiConfig = struct {
+    ptr: *anyopaque,
+
+    const Self = @This();
+
+    pub fn new() WasiConfig {
+        const ptr = cdef.wasi_config_new();
+        return WasiConfig{ .ptr = ptr };
     }
 };
