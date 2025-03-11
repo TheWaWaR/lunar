@@ -4,6 +4,9 @@ const jok = @import("jok");
 const w = @import("wasmtime.zig");
 const host_funcs = @import("host_funcs.zig");
 
+// max wasm file size: 256MB
+const MAX_WASM_SIZE: usize = 256 * 1024 * 1024;
+
 var init_ctx: jok.Context = undefined;
 var engine: w.Engine = undefined;
 var store_context: w.StoreContext = undefined;
@@ -30,11 +33,10 @@ pub fn init(ctx: jok.Context) !void {
 
     const linker = w.Linker.new(engine);
     defer linker.destroy();
-    std.log.info("store context: {*}", .{store_context.ptr});
 
     const file = try std.fs.cwd().openFile("moonbit/examples/animation-2d/target/wasm/release/build/lunar.wasm", .{});
     defer file.close();
-    const wasm_data = try file.readToEndAlloc(ctx.allocator(), 1024 * 1024);
+    const wasm_data = try file.readToEndAlloc(ctx.allocator(), MAX_WASM_SIZE);
     defer ctx.allocator().free(wasm_data);
     const module = try w.Module.new(engine, wasm_data);
     defer module.destroy();
@@ -63,6 +65,8 @@ pub fn init(ctx: jok.Context) !void {
     lunar_quit = w.Func{ .inner = lunar_quit_extern.of.func };
 
     try lunar_init.call(store_context, &.{}, &.{});
+
+    std.log.info("init success", .{});
 }
 
 pub fn event(ctx: jok.Context, e: jok.Event) !void {
@@ -93,5 +97,5 @@ pub fn quit(ctx: jok.Context) void {
         std.log.err("call lunar_quit error", .{});
     };
     engine.destroy();
-    std.log.info("quit", .{});
+    std.log.info("quit success", .{});
 }
