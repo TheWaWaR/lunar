@@ -1,6 +1,6 @@
 {
   "import": [
-    "lunar/lib"
+    "lunar/lunar"
   ],
   "link": {
     "wasm": {

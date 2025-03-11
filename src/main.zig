@@ -10,6 +10,10 @@ const MAX_WASM_SIZE: usize = 256 * 1024 * 1024;
 var init_ctx: jok.Context = undefined;
 var engine: w.Engine = undefined;
 var store_context: w.StoreContext = undefined;
+
+// Function call time cost:
+//   * call empty function: 1us ~ 5us
+//   * call function with one log: 30us ~ 150us
 var lunar_event: w.Func = undefined;
 var lunar_update: w.Func = undefined;
 var lunar_draw: w.Func = undefined;
