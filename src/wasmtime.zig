@@ -5,12 +5,14 @@ pub const WasmtimeError = error{
     NewEngineError,
     NewStoreError,
     NewModuleError,
+    DefineError,
     DefineWasiError,
+    DefineFuncError,
     InstantiateError,
     DefineInstanceError,
     NewInstanceError,
-    DefineFuncError,
     FuncCallError,
+    NewMemoryError,
 };
 
 const Ptr = cdef.Ptr;
@@ -73,7 +75,27 @@ pub const Linker = struct {
         return instance;
     }
 
-    // pub fn define(self: Self, module_name: []const u8, extern_name: []const u8, extern_value: Extern) !void { }
+    pub fn define(
+        self: Self,
+        context: StoreContext,
+        module_name: []const u8,
+        extern_name: []const u8,
+        extern_value: *const Extern,
+    ) !void {
+        const err_ptr_opt = cdef.wasmtime_linker_define(
+            self.ptr,
+            context.ptr,
+            module_name.ptr,
+            module_name.len,
+            extern_name.ptr,
+            extern_name.len,
+            extern_value,
+        );
+        if (err_ptr_opt) |err_ptr| {
+            print_err(err_ptr);
+            return error.DefineError;
+        }
+    }
 
     pub fn defineWasi(self: Self) !void {
         if (cdef.wasmtime_linker_define_wasi(self.ptr)) |_| {
@@ -110,6 +132,33 @@ pub const Linker = struct {
             print_err(err_ptr);
             return error.DefineFuncError;
         }
+    }
+};
+
+pub const MemoryType = struct {
+    ptr: *anyopaque,
+
+    const Self = @This();
+
+    pub fn new(min: u64, max_present: bool, max: u64, is_64: bool, shared: bool) MemoryType {
+        const ptr = cdef.wasmtime_memorytype_new(min, max_present, max, is_64, shared);
+        return MemoryType{ .ptr = ptr };
+    }
+};
+
+pub const Memory = struct {
+    inner: cdef.Memory,
+
+    const Self = @This();
+
+    pub fn new(context: StoreContext, ty: MemoryType) !Memory {
+        var memory: Memory = undefined;
+        const err_ptr_opt = cdef.wasmtime_memory_new(context.ptr, ty.ptr, &memory.inner);
+        if (err_ptr_opt) |err_ptr| {
+            print_err(err_ptr);
+            return error.NewMemoryError;
+        }
+        return memory;
     }
 };
 

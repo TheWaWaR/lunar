@@ -34,10 +34,14 @@ pub fn init(ctx: jok.Context) !void {
     const module = try w.Module.new(engine, wasm_data);
     defer module.destroy();
 
+    const memorytype = w.MemoryType.new(1, false, 0, false, false);
+    const memory = try w.Memory.new(store_context, memorytype);
+    const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = memory.inner } };
     var params: [1]w.ValType = .{w.ValType.newI32()};
     const functype = w.FuncType.new(params[0..], &.{});
     defer functype.destroy();
     var env_data: usize = 0;
+    try linker.define(store_context, "env", "memory", &mem_extern);
     try linker.defineFunc("spectest", "print_char", functype, host_funcs.spectest_print_char, &env_data);
     try linker.defineWasi();
 
