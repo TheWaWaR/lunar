@@ -31,6 +31,9 @@ pub fn init(ctx: jok.Context) !void {
     init_ctx = ctx;
     const args = try std.process.argsAlloc(ctx.allocator());
     defer std.process.argsFree(ctx.allocator(), args);
+    if (args.len < 2) {
+        return error.ArgsIsMissing;
+    }
     try setupWasmtime(ctx, args);
     // your init code
     try lunar_init.call(store_context, &.{}, &.{});
@@ -69,10 +72,16 @@ pub fn quit(ctx: jok.Context) void {
     std.log.info("quit success", .{});
 }
 
+const Error = error {
+    ArgsIsMissing,
+};
+
 fn setupWasmtime(ctx: jok.Context, args: [][:0]u8) !void {
     engine = try w.Engine.new();
+
     const store = try w.Store.new(engine, @ptrCast(&store_data));
     store_context = store.context();
+
     const wasi_config = w.WasiConfig.new();
     wasi_config.inheritStdout();
     wasi_config.inheritStderr();
@@ -80,6 +89,17 @@ fn setupWasmtime(ctx: jok.Context, args: [][:0]u8) !void {
 
     const linker = w.Linker.new(engine);
     defer linker.destroy();
+
+    try linker.defineWasi();
+    const memorytype = w.MemoryType.new(1, false, 0, false, false);
+    const memory = try w.Memory.new(store_context, memorytype);
+    const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = memory.inner } };
+    try linker.define(store_context, "env", "memory", &mem_extern);
+
+    // >> linker.defineFunc
+    // var params: [1]w.ValType = .{w.ValType.newI32()};
+    // const functype = w.FuncType.new(params[0..], &.{});
+    // defer functype.destroy();
 
     const wasm_path = args[1];
     std.log.info("wasm path: {s}", .{wasm_path});
@@ -89,15 +109,6 @@ fn setupWasmtime(ctx: jok.Context, args: [][:0]u8) !void {
     defer ctx.allocator().free(wasm_data);
     const module = try w.Module.new(engine, wasm_data);
     defer module.destroy();
-
-    const memorytype = w.MemoryType.new(1, false, 0, false, false);
-    const memory = try w.Memory.new(store_context, memorytype);
-    const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = memory.inner } };
-    var params: [1]w.ValType = .{w.ValType.newI32()};
-    const functype = w.FuncType.new(params[0..], &.{});
-    defer functype.destroy();
-    try linker.define(store_context, "env", "memory", &mem_extern);
-    try linker.defineWasi();
 
     const instance = try linker.instantiate(store_context, module);
     const lunar_init_extern: w.Extern = instance.exportGet(store_context, "lunar_init").?;
