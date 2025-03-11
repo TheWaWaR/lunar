@@ -11,6 +11,7 @@ var init_ctx: jok.Context = undefined;
 var store_data: usize = 0;
 var func_env_data: usize = 0;
 
+var wasmtime_init_success: bool = false;
 var engine: w.Engine = undefined;
 var store_context: w.StoreContext = undefined;
 
@@ -29,13 +30,16 @@ pub fn get_init_ctx() jok.Context {
 
 pub fn init(ctx: jok.Context) !void {
     init_ctx = ctx;
+
     const args = try std.process.argsAlloc(ctx.allocator());
     defer std.process.argsFree(ctx.allocator(), args);
     if (args.len < 2) {
-        return error.ArgsIsMissing;
+        std.log.err("Wasm path is missing! (Usage: lunar /path/to/game.wasm)", .{});
+        ctx.kill();
+        return;
     }
+
     try setupWasmtime(ctx, args);
-    // your init code
     try lunar_init.call(store_context, &.{}, &.{});
 
     std.log.info("init success", .{});
@@ -65,16 +69,14 @@ pub fn draw(ctx: jok.Context) !void {
 pub fn quit(ctx: jok.Context) void {
     // your deinit code
     _ = ctx;
-    lunar_quit.call(store_context, &.{}, &.{}) catch {
-        std.log.err("call lunar_quit error", .{});
-    };
-    engine.destroy();
+    if (wasmtime_init_success) {
+        lunar_quit.call(store_context, &.{}, &.{}) catch {
+            std.log.err("call lunar_quit error", .{});
+        };
+        engine.destroy();
+    }
     std.log.info("quit success", .{});
 }
-
-const Error = error {
-    ArgsIsMissing,
-};
 
 fn setupWasmtime(ctx: jok.Context, args: [][:0]u8) !void {
     engine = try w.Engine.new();
@@ -111,14 +113,16 @@ fn setupWasmtime(ctx: jok.Context, args: [][:0]u8) !void {
     defer module.destroy();
 
     const instance = try linker.instantiate(store_context, module);
-    const lunar_init_extern: w.Extern = instance.exportGet(store_context, "lunar_init").?;
-    lunar_init = w.Func{ .inner = lunar_init_extern.of.func };
-    const lunar_event_extern: w.Extern = instance.exportGet(store_context, "lunar_event").?;
-    lunar_event = w.Func{ .inner = lunar_event_extern.of.func };
-    const lunar_update_extern: w.Extern = instance.exportGet(store_context, "lunar_update").?;
-    lunar_update = w.Func{ .inner = lunar_update_extern.of.func };
-    const lunar_draw_extern: w.Extern = instance.exportGet(store_context, "lunar_draw").?;
-    lunar_draw = w.Func{ .inner = lunar_draw_extern.of.func };
-    const lunar_quit_extern: w.Extern = instance.exportGet(store_context, "lunar_quit").?;
-    lunar_quit = w.Func{ .inner = lunar_quit_extern.of.func };
+    inline for (.{
+        .{ "lunar_init", &lunar_init },
+        .{ "lunar_event", &lunar_event },
+        .{ "lunar_update", &lunar_update },
+        .{ "lunar_draw", &lunar_draw },
+        .{ "lunar_quit", &lunar_quit },
+    }) |item| {
+        const name, const func = item;
+        const extern_value: w.Extern = instance.exportGet(store_context, name).?;
+        func.* = w.Func{ .inner = extern_value.of.func };
+    }
+    wasmtime_init_success = true;
 }
