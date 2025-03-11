@@ -7,12 +7,12 @@ const host_funcs = @import("host_funcs.zig");
 // max wasm file size: 256MB
 const MAX_WASM_SIZE: usize = 256 * 1024 * 1024;
 
-var init_ctx: jok.Context = undefined;
+var global_ctx: jok.Context = undefined;
 var store_data: usize = 0;
-var func_env_data: usize = 0;
 
 var wasmtime_init_success: bool = false;
 var engine: w.Engine = undefined;
+var store: w.Store = undefined;
 var store_context: w.StoreContext = undefined;
 
 // Wasm function call time cost:
@@ -25,11 +25,11 @@ var lunar_draw: w.Func = undefined;
 var lunar_quit: w.Func = undefined;
 
 pub fn get_init_ctx() jok.Context {
-    return init_ctx;
+    return global_ctx;
 }
 
 pub fn init(ctx: jok.Context) !void {
-    init_ctx = ctx;
+    global_ctx = ctx;
 
     const args = try std.process.argsAlloc(ctx.allocator());
     defer std.process.argsFree(ctx.allocator(), args);
@@ -39,7 +39,14 @@ pub fn init(ctx: jok.Context) !void {
         return;
     }
 
-    try setupWasmtime(ctx, args);
+    const wasm_path = args[1];
+    std.log.info("wasm path: {s}", .{wasm_path});
+    const file = try std.fs.cwd().openFile(wasm_path, .{});
+    defer file.close();
+    const wasm_data = try file.readToEndAlloc(ctx.allocator(), MAX_WASM_SIZE);
+    defer ctx.allocator().free(wasm_data);
+    try setupWasmtime(&global_ctx, wasm_data);
+
     try lunar_init.call(store_context, &.{}, &.{});
 
     std.log.info("init success", .{});
@@ -73,15 +80,17 @@ pub fn quit(ctx: jok.Context) void {
         lunar_quit.call(store_context, &.{}, &.{}) catch {
             std.log.err("call lunar_quit error", .{});
         };
+        store.destroy();
         engine.destroy();
     }
     std.log.info("quit success", .{});
 }
 
-fn setupWasmtime(ctx: jok.Context, args: [][:0]u8) !void {
-    engine = try w.Engine.new();
+fn setupWasmtime(ctx: *jok.Context, wasm_data: []const u8) !void {
+    _ = ctx;
 
-    const store = try w.Store.new(engine, @ptrCast(&store_data));
+    engine = try w.Engine.new();
+    store = try w.Store.new(engine, @ptrCast(&store_data));
     store_context = store.context();
 
     const wasi_config = w.WasiConfig.new();
@@ -103,12 +112,6 @@ fn setupWasmtime(ctx: jok.Context, args: [][:0]u8) !void {
     // const functype = w.FuncType.new(params[0..], &.{});
     // defer functype.destroy();
 
-    const wasm_path = args[1];
-    std.log.info("wasm path: {s}", .{wasm_path});
-    const file = try std.fs.cwd().openFile(wasm_path, .{});
-    defer file.close();
-    const wasm_data = try file.readToEndAlloc(ctx.allocator(), MAX_WASM_SIZE);
-    defer ctx.allocator().free(wasm_data);
     const module = try w.Module.new(engine, wasm_data);
     defer module.destroy();
 

@@ -291,6 +291,10 @@ pub const Store = struct {
         const ptr = cdef.wasmtime_store_context(self.ptr);
         return StoreContext{ .ptr = ptr };
     }
+
+    pub fn destroy(self: Store) void {
+        cdef.wasmtime_store_delete(self.ptr);
+    }
 };
 
 pub const StoreContext = struct {
