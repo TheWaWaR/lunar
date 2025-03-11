@@ -8,12 +8,16 @@ const host_funcs = @import("host_funcs.zig");
 const MAX_WASM_SIZE: usize = 256 * 1024 * 1024;
 
 var init_ctx: jok.Context = undefined;
+var store_data: usize = 0;
+var func_env_data: usize = 0;
+
 var engine: w.Engine = undefined;
 var store_context: w.StoreContext = undefined;
 
-// Function call time cost:
+// Wasm function call time cost:
 //   * call empty function: 1us ~ 5us
 //   * call function with one log: 30us ~ 150us
+var lunar_init: w.Func = undefined;
 var lunar_event: w.Func = undefined;
 var lunar_update: w.Func = undefined;
 var lunar_draw: w.Func = undefined;
@@ -25,49 +29,8 @@ pub fn get_init_ctx() jok.Context {
 
 pub fn init(ctx: jok.Context) !void {
     init_ctx = ctx;
+    try setupWasmtime(ctx);
     // your init code
-    engine = try w.Engine.new();
-    var store_data: usize = 0;
-    const store = try w.Store.new(engine, @ptrCast(&store_data));
-    store_context = store.context();
-    const wasi_config = w.WasiConfig.new();
-    wasi_config.inheritStdout();
-    wasi_config.inheritStderr();
-    try store_context.setWasi(wasi_config);
-
-    const linker = w.Linker.new(engine);
-    defer linker.destroy();
-
-    const file = try std.fs.cwd().openFile("moonbit/examples/animation-2d/target/wasm/release/build/lunar.wasm", .{});
-    defer file.close();
-    const wasm_data = try file.readToEndAlloc(ctx.allocator(), MAX_WASM_SIZE);
-    defer ctx.allocator().free(wasm_data);
-    const module = try w.Module.new(engine, wasm_data);
-    defer module.destroy();
-
-    const memorytype = w.MemoryType.new(1, false, 0, false, false);
-    const memory = try w.Memory.new(store_context, memorytype);
-    const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = memory.inner } };
-    var params: [1]w.ValType = .{w.ValType.newI32()};
-    const functype = w.FuncType.new(params[0..], &.{});
-    defer functype.destroy();
-    var env_data: usize = 0;
-    try linker.define(store_context, "env", "memory", &mem_extern);
-    try linker.defineFunc("spectest", "print_char", functype, host_funcs.spectest_print_char, &env_data);
-    try linker.defineWasi();
-
-    const instance = try linker.instantiate(store_context, module);
-    const lunar_init_extern: w.Extern = instance.exportGet(store_context, "lunar_init").?;
-    const lunar_init = w.Func{ .inner = lunar_init_extern.of.func };
-    const lunar_event_extern: w.Extern = instance.exportGet(store_context, "lunar_event").?;
-    lunar_event = w.Func{ .inner = lunar_event_extern.of.func };
-    const lunar_update_extern: w.Extern = instance.exportGet(store_context, "lunar_update").?;
-    lunar_update = w.Func{ .inner = lunar_update_extern.of.func };
-    const lunar_draw_extern: w.Extern = instance.exportGet(store_context, "lunar_draw").?;
-    lunar_draw = w.Func{ .inner = lunar_draw_extern.of.func };
-    const lunar_quit_extern: w.Extern = instance.exportGet(store_context, "lunar_quit").?;
-    lunar_quit = w.Func{ .inner = lunar_quit_extern.of.func };
-
     try lunar_init.call(store_context, &.{}, &.{});
 
     std.log.info("init success", .{});
@@ -102,4 +65,45 @@ pub fn quit(ctx: jok.Context) void {
     };
     engine.destroy();
     std.log.info("quit success", .{});
+}
+
+fn setupWasmtime(ctx: jok.Context) !void {
+    engine = try w.Engine.new();
+    const store = try w.Store.new(engine, @ptrCast(&store_data));
+    store_context = store.context();
+    const wasi_config = w.WasiConfig.new();
+    wasi_config.inheritStdout();
+    wasi_config.inheritStderr();
+    try store_context.setWasi(wasi_config);
+
+    const linker = w.Linker.new(engine);
+    defer linker.destroy();
+
+    const file = try std.fs.cwd().openFile("moonbit/examples/animation-2d/target/wasm/release/build/lunar.wasm", .{});
+    defer file.close();
+    const wasm_data = try file.readToEndAlloc(ctx.allocator(), MAX_WASM_SIZE);
+    defer ctx.allocator().free(wasm_data);
+    const module = try w.Module.new(engine, wasm_data);
+    defer module.destroy();
+
+    const memorytype = w.MemoryType.new(1, false, 0, false, false);
+    const memory = try w.Memory.new(store_context, memorytype);
+    const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = memory.inner } };
+    var params: [1]w.ValType = .{w.ValType.newI32()};
+    const functype = w.FuncType.new(params[0..], &.{});
+    defer functype.destroy();
+    try linker.define(store_context, "env", "memory", &mem_extern);
+    try linker.defineWasi();
+
+    const instance = try linker.instantiate(store_context, module);
+    const lunar_init_extern: w.Extern = instance.exportGet(store_context, "lunar_init").?;
+    lunar_init = w.Func{ .inner = lunar_init_extern.of.func };
+    const lunar_event_extern: w.Extern = instance.exportGet(store_context, "lunar_event").?;
+    lunar_event = w.Func{ .inner = lunar_event_extern.of.func };
+    const lunar_update_extern: w.Extern = instance.exportGet(store_context, "lunar_update").?;
+    lunar_update = w.Func{ .inner = lunar_update_extern.of.func };
+    const lunar_draw_extern: w.Extern = instance.exportGet(store_context, "lunar_draw").?;
+    lunar_draw = w.Func{ .inner = lunar_draw_extern.of.func };
+    const lunar_quit_extern: w.Extern = instance.exportGet(store_context, "lunar_quit").?;
+    lunar_quit = w.Func{ .inner = lunar_quit_extern.of.func };
 }
