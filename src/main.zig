@@ -12,6 +12,7 @@ var store_data: usize = 0;
 
 var wasmtime_init_success: bool = false;
 var engine: w.Engine = undefined;
+var memory: w.Memory = undefined;
 var store: w.Store = undefined;
 var store_context: w.StoreContext = undefined;
 
@@ -26,6 +27,9 @@ var lunar_quit: w.Func = undefined;
 
 pub fn get_init_ctx() jok.Context {
     return global_ctx;
+}
+pub fn get_memory_data() [*c]u8 {
+    return memory.data(store_context);
 }
 
 pub fn init(ctx: jok.Context) !void {
@@ -103,10 +107,12 @@ fn setupWasmtime(ctx: *jok.Context, wasm_data: []const u8) !void {
 
     try linker.defineWasi();
     const memorytype = w.MemoryType.new(1, false, 0, false, false);
-    const memory = try w.Memory.new(store_context, memorytype);
+    memory = try w.Memory.new(store_context, memorytype);
     const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = memory.inner } };
     try linker.define(store_context, "env", "memory", &mem_extern);
 
+    try host_funcs.defineHostFuncs(linker);
+    std.log.info("define host functions success", .{});
     // >> linker.defineFunc
     // var params: [1]w.ValType = .{w.ValType.newI32()};
     // const functype = w.FuncType.new(params[0..], &.{});

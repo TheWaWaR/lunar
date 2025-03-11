@@ -48,6 +48,8 @@ pub extern "c" fn wasmtime_linker_define_func(Ptr, ConstPtr, usize, ConstPtr, us
 pub extern "c" fn wasmtime_memorytype_new(u64, bool, u64, bool, bool) Ptr;
 // fn (store_context, memorytype, memory) -> error
 pub extern "c" fn wasmtime_memory_new(Ptr, ConstPtr, Ptr) ?Ptr;
+// fn (store_context, memory) -> data_ptr
+pub extern "c" fn wasmtime_memory_data(ConstPtr, ConstPtr) [*c]u8;
 
 ///////////////////////////////////////////////////////////////////////////////
 // wasmtime/func.h
@@ -136,7 +138,7 @@ pub const Value = extern struct {
     pub fn newI32(value: i32) Value {
         return Value{ .kind = .i32, .of = .{ .i32 = value } };
     }
-    pub fn newI64(value: i32) Value {
+    pub fn newI64(value: i64) Value {
         return Value{ .kind = .i64, .of = .{ .i64 = value } };
     }
     pub fn newF32(value: f32) Value {
@@ -175,6 +177,7 @@ pub const Table = extern struct {
     store_id: u64,
     __private: usize,
 };
+// wasmtime_memory_t
 pub const Memory = extern struct {
     store_id: u64,
     __private: usize,
@@ -226,7 +229,7 @@ pub fn wasm_valtype_new_funcref() Ptr {
 }
 
 // fn void wasm_valtype_vec_new(wasm_valtype_vec_t *out, size_t, wasm_valtype_t *const[])
-pub extern "c" fn wasm_valtype_vec_new(Ptr, usize, Ptr) void;
+pub extern "c" fn wasm_valtype_vec_new(Ptr, usize, ConstPtr) void;
 // fn void wasm_valtype_vec_new_empty(wasm_valtype_vec_t *out)
 pub extern "c" fn wasm_valtype_vec_new_empty(Ptr) void;
 

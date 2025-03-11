@@ -114,10 +114,12 @@ pub const Linker = struct {
         self: Self,
         module_name: []const u8,
         func_name: []const u8,
-        ty: FuncType,
         cb: CallbackFn,
+        params: []const ValType,
+        results: []const ValType,
         data: *anyopaque,
     ) !void {
+        const ty = FuncType.new(params, results);
         const err_ptr_opt = cdef.wasmtime_linker_define_func(
             self.ptr,
             module_name.ptr,
@@ -161,6 +163,10 @@ pub const Memory = struct {
         }
         return memory;
     }
+
+    pub fn data(self: Self, context: StoreContext) [*c]u8 {
+        return cdef.wasmtime_memory_data(context.ptr, &self.inner);
+    }
 };
 
 pub const Func = struct {
@@ -200,7 +206,7 @@ pub const FuncType = struct {
 
     const Self = @This();
 
-    fn vec_new(items: []ValType) ValTypeVec {
+    fn vec_new(items: []const ValType) ValTypeVec {
         var wrapper: ValTypeVec = undefined;
         if (items.len == 0) {
             cdef.wasm_valtype_vec_new_empty(&wrapper);
@@ -210,7 +216,7 @@ pub const FuncType = struct {
         return wrapper;
     }
 
-    pub fn new(params: []ValType, results: []ValType) FuncType {
+    pub fn new(params: []const ValType, results: []const ValType) FuncType {
         var params_wrapper = Self.vec_new(params);
         var results_wrapper = Self.vec_new(results);
         const ptr = cdef.wasm_functype_new(&params_wrapper, &results_wrapper);
