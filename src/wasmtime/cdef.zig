@@ -239,3 +239,8 @@ pub const ValTypeVec = extern struct {
 // fn() -> wasi_config
 pub extern "c" fn wasi_config_new() Ptr;
 pub extern "c" fn wasi_config_delete(Ptr) void;
+pub extern "c" fn wasi_config_inherit_argv(Ptr) void;
+pub extern "c" fn wasi_config_inherit_env(Ptr) void;
+pub extern "c" fn wasi_config_inherit_stdin(Ptr) void;
+pub extern "c" fn wasi_config_inherit_stdout(Ptr) void;
+pub extern "c" fn wasi_config_inherit_stderr(Ptr) void;

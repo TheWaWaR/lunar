@@ -24,6 +24,8 @@ pub fn init(ctx: jok.Context) !void {
     const store = try w.Store.new(engine, @ptrCast(&store_data));
     store_context = store.context();
     const wasi_config = w.WasiConfig.new();
+    wasi_config.inheritStdout();
+    wasi_config.inheritStderr();
     try store_context.setWasi(wasi_config);
 
     const linker = w.Linker.new(engine);

@@ -345,4 +345,20 @@ pub const WasiConfig = struct {
         const ptr = cdef.wasi_config_new();
         return WasiConfig{ .ptr = ptr };
     }
+
+    pub fn inheritArgv(self: WasiConfig) void {
+        cdef.wasi_config_inherit_argv(self.ptr);
+    }
+    pub fn inheritEnv(self: WasiConfig) void {
+        cdef.wasi_config_inherit_env(self.ptr);
+    }
+    pub fn inheritStdin(self: WasiConfig) void {
+        cdef.wasi_config_inherit_stdin(self.ptr);
+    }
+    pub fn inheritStdout(self: WasiConfig) void {
+        cdef.wasi_config_inherit_stdout(self.ptr);
+    }
+    pub fn inheritStderr(self: WasiConfig) void {
+        cdef.wasi_config_inherit_stderr(self.ptr);
+    }
 };
