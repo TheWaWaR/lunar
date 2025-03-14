@@ -1,5 +1,7 @@
 const std = @import("std");
 const jok = @import("jok");
+const physfs = jok.physfs;
+const j2d = jok.j2d;
 
 const w = @import("wasmtime.zig");
 const host_funcs = @import("host_funcs.zig");
@@ -22,6 +24,10 @@ const AppData = struct {
 
     wasmtime_init_success: bool = false,
     bytes_buffer: std.ArrayList(u8) = undefined,
+
+    batchpool_2d: j2d.BatchPool(64, false) = undefined,
+    as_map_2d: std.StringHashMap(*j2d.AnimationSystem) = undefined,
+    sheet_map_2d: std.StringHashMap(*j2d.SpriteSheet) = undefined,
 
     const Self = @This();
 
@@ -58,6 +64,12 @@ pub fn init(ctx: jok.Context) !void {
     defer ctx.allocator().free(wasm_data);
     try setupWasmtime(&app.ctx, wasm_data);
 
+    const size = ctx.getCanvasSize();
+    std.log.info("canvas size: {any}", .{size});
+
+    app.batchpool_2d = try @TypeOf(app.batchpool_2d).init(ctx);
+    app.as_map_2d = @TypeOf(app.as_map_2d).init(ctx.allocator());
+    app.sheet_map_2d = @TypeOf(app.sheet_map_2d).init(ctx.allocator());
     try app.guest.init();
 
     std.log.info("init success", .{});
@@ -97,6 +109,7 @@ pub fn draw(ctx: jok.Context) !void {
 pub fn quit(ctx: jok.Context) void {
     // your deinit code
     _ = ctx;
+
     app.bytes_buffer.deinit();
     if (app.wasmtime_init_success) {
         app.guest.quit() catch {
@@ -105,6 +118,18 @@ pub fn quit(ctx: jok.Context) void {
         app.store.destroy();
         app.engine.destroy();
     }
+    inline for (.{
+        &app.sheet_map_2d,
+        &app.as_map_2d,
+    }) |map| {
+        var it = map.iterator();
+        while (it.next()) |kv| {
+            app.ctx.allocator().free(kv.key_ptr.*);
+            kv.value_ptr.*.destroy();
+        }
+    }
+    app.batchpool_2d.deinit();
+
     std.log.info("quit success", .{});
 }
 
