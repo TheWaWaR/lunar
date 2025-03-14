@@ -16,8 +16,8 @@ pub const WasmtimeError = error{
     SetWasiError,
 };
 
-const Ptr = cdef.Ptr;
-const ConstPtr = cdef.ConstPtr;
+pub const Ptr = cdef.Ptr;
+pub const ConstPtr = cdef.ConstPtr;
 const ValTypeVec = cdef.ValTypeVec;
 pub const Extern = cdef.Extern;
 pub const Value = cdef.Value;
@@ -33,6 +33,27 @@ var err_msg: cdef.ByteVec = .{
 fn print_err(err_ptr: Ptr) void {
     cdef.wasmtime_error_message(err_ptr, &err_msg);
     std.log.err("error msg: {s}", .{err_msg.data[0..err_msg.size]});
+}
+
+pub const HostFn = *const fn (args: [*]const Value, results: [*]Value) ?Ptr;
+
+pub fn wrapFn(comptime host_fn: HostFn) CallbackFn {
+    return struct {
+        fn callback(
+            env: Ptr,
+            caller: Ptr,
+            args: [*]const Value,
+            nargs: usize,
+            results: [*]Value,
+            nresults: usize,
+        ) callconv(.C) ?Ptr {
+            _ = env;
+            _ = caller;
+            _ = nargs;
+            _ = nresults;
+            return host_fn(args, results);
+        }
+    }.callback;
 }
 
 pub const Engine = struct {
