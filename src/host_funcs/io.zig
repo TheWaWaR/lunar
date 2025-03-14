@@ -1,7 +1,7 @@
 const std = @import("std");
 const jok = @import("jok");
 const w = @import("../wasmtime.zig");
-const app = @import("../main.zig");
+const get_app = @import("../main.zig").get_app;
 
 const Value = w.Value;
 const Ptr = w.Ptr;
@@ -17,7 +17,7 @@ pub fn getKeyboardState(args: [*]const Value, results: [*]Value) ?Ptr {
     const len_ptr = args[0].to_guest_ptr();
 
     const states = jok.io.getKeyboardState().states;
-    const mem_data = app.get_memory_data();
+    const mem_data = get_app().guest_mem_data();
     std.mem.writeInt(usize, @ptrCast(mem_data[len_ptr..]), states.len, .little);
     results[0] = newi64(@intCast(@intFromPtr(states.ptr)));
     return null;
@@ -45,7 +45,7 @@ pub fn getMouseState(args: [*]const Value, results: [*]Value) ?Ptr {
     const pos_x_ptr = args[0].to_guest_ptr();
     const pos_y_ptr = args[1].to_guest_ptr();
 
-    const mem_data = app.get_memory_data();
+    const mem_data = get_app().guest_mem_data();
     const state = jok.io.getMouseState();
     std.mem.writeInt(u32, @ptrCast(mem_data[pos_x_ptr..]), @bitCast(state.pos.x), .little);
     std.mem.writeInt(u32, @ptrCast(mem_data[pos_y_ptr..]), @bitCast(state.pos.y), .little);

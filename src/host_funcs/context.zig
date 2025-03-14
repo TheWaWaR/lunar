@@ -1,6 +1,6 @@
 const std = @import("std");
 const jok = @import("jok");
-const app = @import("../main.zig");
+const get_app = @import("../main.zig").get_app;
 const w = @import("../wasmtime.zig");
 const common = @import("common.zig");
 
@@ -24,10 +24,11 @@ const readColor = common.readColor;
 //   r: Byte, g: Byte, b: Byte, a: Byte,
 // ) = "lunar" "debug_print"
 pub fn debugPrint(args: [*]const Value, _: [*]Value) ?Ptr {
-    const text = readBytes(app.get_memory_data(), args[0..2]);
+    const app = get_app();
+    const text = readBytes(app.guest_mem_data(), args[0..2]);
     const pos = readPoint(args[2..4]);
     const color = readColor(args[4..8]);
 
-    app.get_init_ctx().debugPrint(text, .{ .pos = pos, .color = color });
+    app.ctx.debugPrint(text, .{ .pos = pos, .color = color });
     return null;
 }

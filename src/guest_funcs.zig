@@ -3,6 +3,9 @@ const w = @import("wasmtime.zig");
 pub const GuestFuncs = struct {
     context: w.StoreContext,
 
+    // Wasm function call time cost:
+    //   * call empty function: 1us ~ 5us
+    //   * call function with one log: 30us ~ 150us
     lunar_init: w.Func = undefined,
     lunar_event: w.Func = undefined,
     lunar_update: w.Func = undefined,

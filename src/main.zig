@@ -8,31 +8,32 @@ const guest_funcs = @import("guest_funcs.zig");
 // max wasm file size: 256MB
 const MAX_WASM_SIZE: usize = 256 * 1024 * 1024;
 
-var global_ctx: jok.Context = undefined;
+const AppData = struct {
+    ctx: jok.Context = undefined,
+    engine: w.Engine = undefined,
+    memory: w.Memory = undefined,
+    store: w.Store = undefined,
+    store_context: w.StoreContext = undefined,
+    guest: guest_funcs.GuestFuncs = undefined,
+    wasmtime_init_success: bool = false,
+
+    const Self = @This();
+
+    pub fn guest_mem_data(self: *Self) [*]u8 {
+        return self.memory.data(self.store_context);
+    }
+};
+
+var app: AppData = .{};
+pub fn get_app() *AppData {
+    return &app;
+}
+
 var store_data: usize = 0;
-
-var wasmtime_init_success: bool = false;
-var engine: w.Engine = undefined;
-var memory: w.Memory = undefined;
-var store: w.Store = undefined;
-var store_context: w.StoreContext = undefined;
-
 var max_call_update_us: i64 = 0;
 
-// Wasm function call time cost:
-//   * call empty function: 1us ~ 5us
-//   * call function with one log: 30us ~ 150us
-var guest: guest_funcs.GuestFuncs = undefined;
-
-pub fn get_init_ctx() jok.Context {
-    return global_ctx;
-}
-pub fn get_memory_data() [*]u8 {
-    return memory.data(store_context);
-}
-
 pub fn init(ctx: jok.Context) !void {
-    global_ctx = ctx;
+    app.ctx = ctx;
 
     const args = try std.process.argsAlloc(ctx.allocator());
     defer std.process.argsFree(ctx.allocator(), args);
@@ -48,9 +49,9 @@ pub fn init(ctx: jok.Context) !void {
     defer file.close();
     const wasm_data = try file.readToEndAlloc(ctx.allocator(), MAX_WASM_SIZE);
     defer ctx.allocator().free(wasm_data);
-    try setupWasmtime(&global_ctx, wasm_data);
+    try setupWasmtime(&app.ctx, wasm_data);
 
-    try guest.init();
+    try app.guest.init();
 
     std.log.info("init success", .{});
 }
@@ -60,20 +61,20 @@ pub fn event(ctx: jok.Context, e: jok.Event) !void {
     _ = ctx;
     _ = e;
     const event_type = 0;
-    try guest.event(event_type);
+    try app.guest.event(event_type);
 }
 
 pub fn update(ctx: jok.Context) !void {
     // your game state updating code
     _ = ctx;
-    try guest.update();
+    try app.guest.update();
 }
 
 pub fn draw(ctx: jok.Context) !void {
     // your drawing code
     _ = ctx;
     const t1 = std.time.microTimestamp();
-    try guest.draw();
+    try app.guest.draw();
     const dt = std.time.microTimestamp() - t1;
     if (dt > max_call_update_us) {
         max_call_update_us = dt;
@@ -85,12 +86,12 @@ pub fn draw(ctx: jok.Context) !void {
 pub fn quit(ctx: jok.Context) void {
     // your deinit code
     _ = ctx;
-    if (wasmtime_init_success) {
-        guest.quit() catch {
+    if (app.wasmtime_init_success) {
+        app.guest.quit() catch {
             std.log.err("call lunar_quit error", .{});
         };
-        store.destroy();
-        engine.destroy();
+        app.store.destroy();
+        app.engine.destroy();
     }
     std.log.info("quit success", .{});
 }
@@ -98,31 +99,31 @@ pub fn quit(ctx: jok.Context) void {
 fn setupWasmtime(ctx: *jok.Context, wasm_data: []const u8) !void {
     _ = ctx;
 
-    engine = try w.Engine.new();
-    store = try w.Store.new(engine, @ptrCast(&store_data));
-    store_context = store.context();
+    app.engine = try w.Engine.new();
+    app.store = try w.Store.new(app.engine, @ptrCast(&store_data));
+    app.store_context = app.store.context();
 
     const wasi_config = w.WasiConfig.new();
     wasi_config.inheritStdout();
     wasi_config.inheritStderr();
-    try store_context.setWasi(wasi_config);
+    try app.store_context.setWasi(wasi_config);
 
-    const linker = w.Linker.new(engine);
+    const linker = w.Linker.new(app.engine);
     defer linker.destroy();
 
     try linker.defineWasi();
     const memorytype = w.MemoryType.new(1, false, 0, false, false);
-    memory = try w.Memory.new(store_context, memorytype);
-    const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = memory.inner } };
-    try linker.define(store_context, "env", "memory", &mem_extern);
+    app.memory = try w.Memory.new(app.store_context, memorytype);
+    const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = app.memory.inner } };
+    try linker.define(app.store_context, "env", "memory", &mem_extern);
 
     try host_funcs.defineHostFuncs(linker);
     std.log.info("define host functions success", .{});
 
-    const module = try w.Module.new(engine, wasm_data);
+    const module = try w.Module.new(app.engine, wasm_data);
     defer module.destroy();
 
-    const instance = try linker.instantiate(store_context, module);
-    guest = try guest_funcs.exportGetGuestFuncs(instance, store_context);
-    wasmtime_init_success = true;
+    const instance = try linker.instantiate(app.store_context, module);
+    app.guest = try guest_funcs.exportGetGuestFuncs(instance, app.store_context);
+    app.wasmtime_init_success = true;
 }
