@@ -5,6 +5,10 @@ const w = @import("wasmtime.zig");
 const host_funcs = @import("host_funcs.zig");
 const guest_funcs = @import("guest_funcs.zig");
 
+pub const jok_window_title: [:0]const u8 = "lunar";
+pub const jok_window_size: jok.config.WindowSize = .{ .custom = .{ .width = 960, .height = 640 } };
+pub const jok_window_resizable: bool = true;
+
 // max wasm file size: 256MB
 const MAX_WASM_SIZE: usize = 256 * 1024 * 1024;
 
@@ -77,7 +81,7 @@ pub fn draw(ctx: jok.Context) !void {
     const t1 = std.time.microTimestamp();
     try app.guest.draw();
     const dt = std.time.microTimestamp() - t1;
-    if (dt > max_call_update_us) {
+    if (dt > 1000 and dt > max_call_update_us) {
         max_call_update_us = dt;
         // cost: less than 100us
         std.log.info(
