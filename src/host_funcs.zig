@@ -45,6 +45,24 @@ pub fn defineHostFuncs(linker: w.Linker) !void {
     }
 }
 
+fn readBytes(mem_data: [*]const u8, args: []const Value) []const u8 {
+    const ptr = args[0].to_guest_ptr();
+    const len: usize = @intCast(args[1].of.i32);
+    return mem_data[ptr .. ptr + len];
+}
+fn readPoint(args: []const Value) jok.Point {
+    const x: f32 = args[0].of.f32;
+    const y: f32 = args[1].of.f32;
+    return jok.Point{ .x = x, .y = y };
+}
+fn readColor(args: []const Value) jok.Color {
+    const r: u8 = @intCast(args[0].of.i32);
+    const g: u8 = @intCast(args[1].of.i32);
+    const b: u8 = @intCast(args[2].of.i32);
+    const a: u8 = @intCast(args[3].of.i32);
+    return jok.Color.rgba(r, g, b, a);
+}
+
 // [moonbit]: fn get_keyborad_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyborad_state"
 pub fn getKeyboardState(args: [*]const Value, results: [*]Value) ?Ptr {
     const len_ptr = args[0].to_guest_ptr();
@@ -93,21 +111,10 @@ pub fn getMouseState(args: [*]const Value, results: [*]Value) ?Ptr {
 //   r: Byte, g: Byte, b: Byte, a: Byte,
 // ) = "lunar" "debug_print"
 pub fn debugPrint(args: [*]const Value, _: [*]Value) ?Ptr {
-    const text_ptr = args[0].to_guest_ptr();
-    const text_len: usize = @intCast(args[1].of.i32);
-    const x: f32 = args[2].of.f32;
-    const y: f32 = args[3].of.f32;
-    const r: u8 = @intCast(args[4].of.i32);
-    const g: u8 = @intCast(args[5].of.i32);
-    const b: u8 = @intCast(args[6].of.i32);
-    const a: u8 = @intCast(args[7].of.i32);
+    const text = readBytes(app.get_memory_data(), args[0..2]);
+    const pos = readPoint(args[2..4]);
+    const color = readColor(args[4..8]);
 
-    const pos = jok.Point{ .x = x, .y = y };
-    const color = jok.Color.rgba(r, g, b, a);
-    const mem_data = app.get_memory_data();
-    app.get_init_ctx().debugPrint(
-        mem_data[text_ptr .. text_ptr + text_len],
-        .{ .pos = pos, .color = color },
-    );
+    app.get_init_ctx().debugPrint(text, .{ .pos = pos, .color = color });
     return null;
 }
