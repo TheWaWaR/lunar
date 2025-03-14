@@ -44,6 +44,13 @@ fn to_zig_byte_slice(val1: w.Value, val2: w.Value) []u8 {
     return ptr[0..len];
 }
 
+fn log_value(name: []const u8, val: w.Value) void {
+    const bytes: [*]const u8 = @ptrCast(&val.of);
+    std.log.info("bytes: {any} ({any}) == {s}", .{ bytes[0..16], val.kind, name });
+}
+
+// FIXME: bug from: wasmtime/crates/c-api/src/func.rs => c_callback_to_rust_fn()
+
 // [moonbit]: fn get_keyborad_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyborad_state"
 pub fn getKeyboardState(
     env: *anyopaque,
@@ -56,12 +63,13 @@ pub fn getKeyboardState(
     _ = env;
     _ = caller;
     std.log.info("getKeyboardState, nargs: {}, nresults: {}", .{ nargs, nresults });
+    log_value("args[0]", args[0]);
+    log_value("results[0]", results[0]);
     const states = jok.io.getKeyboardState().states;
     const mem_data = app.get_memory_data();
     const arg0 = args[0];
     const len_ptr = to_byte_ptr(arg0);
-    const bytes: [*]const u8 = @ptrCast(&args[0].of);
-    std.log.info("len_ptr: {}, {}, bytes: {any}", .{ len_ptr, arg0.of.i32, bytes[0..16] });
+    std.log.info("len_ptr: {}, {}", .{ len_ptr, arg0.of.i32 });
     std.mem.writeInt(usize, @ptrCast(mem_data[13480..]), states.len, .little);
     results[0] = w.Value.newI64(@intCast(@intFromPtr(states.ptr)));
     return null;
@@ -79,6 +87,10 @@ pub fn isKeyPressed(
     _ = env;
     _ = caller;
     std.log.info("isKeyPressed BEGIN, nargs={}, nresults={}", .{ nargs, nresults });
+    log_value("args[0]", args[0]);
+    log_value("args[1]", args[1]);
+    log_value("args[2]", args[2]);
+    log_value("results[0]", results[0]);
     const states = to_zig_byte_slice(args[0], args[1]);
     const scancode: c_uint = @intCast(args[2].of.i32);
     const kbd = jok.io.KeyboardState{ .states = states };
