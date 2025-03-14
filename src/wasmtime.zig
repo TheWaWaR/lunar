@@ -1,6 +1,15 @@
 const std = @import("std");
 const cdef = @import("wasmtime/cdef.zig");
 
+pub const Ptr = cdef.Ptr;
+pub const ConstPtr = cdef.ConstPtr;
+pub const ValTypeVec = cdef.ValTypeVec;
+pub const Extern = cdef.Extern;
+pub const Value = cdef.Value;
+pub const ValueKind = cdef.ValueKind;
+pub const ValueUnion = cdef.ValueUnion;
+pub const CallbackFn = cdef.CallbackFn;
+
 pub const WasmtimeError = error{
     NewEngineError,
     NewStoreError,
@@ -15,25 +24,6 @@ pub const WasmtimeError = error{
     NewMemoryError,
     SetWasiError,
 };
-
-pub const Ptr = cdef.Ptr;
-pub const ConstPtr = cdef.ConstPtr;
-const ValTypeVec = cdef.ValTypeVec;
-pub const Extern = cdef.Extern;
-pub const Value = cdef.Value;
-pub const ValueKind = cdef.ValueKind;
-pub const ValueUnion = cdef.ValueUnion;
-pub const CallbackFn = cdef.CallbackFn;
-
-var err_msg_buf: [1024]u8 = undefined;
-var err_msg: cdef.ByteVec = .{
-    .size = 0,
-    .data = err_msg_buf[0..],
-};
-fn print_err(err_ptr: Ptr) void {
-    cdef.wasmtime_error_message(err_ptr, &err_msg);
-    std.log.err("error msg: {s}", .{err_msg.data[0..err_msg.size]});
-}
 
 pub const HostFn = *const fn (args: [*]const Value, results: [*]Value) ?Ptr;
 
@@ -54,6 +44,13 @@ pub fn wrapFn(comptime host_fn: HostFn) CallbackFn {
             return host_fn(args, results);
         }
     }.callback;
+}
+
+fn print_err(err_ptr: Ptr) void {
+    var err_msg_buf: [1024]u8 = undefined;
+    var err_msg: cdef.ByteVec = .{ .size = 0, .data = err_msg_buf[0..] };
+    cdef.wasmtime_error_message(err_ptr, &err_msg);
+    std.log.err("error msg: {s}", .{err_msg.data[0..err_msg.size]});
 }
 
 pub const Engine = struct {

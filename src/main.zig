@@ -63,8 +63,7 @@ pub fn event(ctx: jok.Context, e: jok.Event) !void {
     _ = ctx;
     _ = e;
     const event_type = 0;
-    const args: [1]w.Value = .{w.Value.newI32(event_type)};
-    try lunar_event.call(store_context, args[0..], &.{});
+    try lunar_event.call(store_context, &.{w.Value.newI32(event_type)}, &.{});
 }
 
 pub fn update(ctx: jok.Context) !void {
