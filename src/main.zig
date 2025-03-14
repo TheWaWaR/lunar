@@ -16,6 +16,8 @@ var memory: w.Memory = undefined;
 var store: w.Store = undefined;
 var store_context: w.StoreContext = undefined;
 
+var max_call_update_us: i64 = 0;
+
 // Wasm function call time cost:
 //   * call empty function: 1us ~ 5us
 //   * call function with one log: 30us ~ 150us
@@ -74,7 +76,14 @@ pub fn update(ctx: jok.Context) !void {
 pub fn draw(ctx: jok.Context) !void {
     // your drawing code
     _ = ctx;
+    const t1 = std.time.microTimestamp();
     try lunar_draw.call(store_context, &.{}, &.{});
+    const dt = std.time.microTimestamp() - t1;
+    if (dt > max_call_update_us) {
+        max_call_update_us = dt;
+        // cost: less than 100us
+        std.log.info("New max update() cost: {}us", .{max_call_update_us});
+    }
 }
 
 pub fn quit(ctx: jok.Context) void {
