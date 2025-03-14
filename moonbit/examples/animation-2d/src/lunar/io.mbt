@@ -28,6 +28,7 @@ fn get_keyborad_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyborad_state
 
 pub fn get_keyborad_state() -> KeyboardState {
   let len_ptr = get_global_buf_ptr()
+  log("> len_ptr: \{len_ptr}")
   let ptr = get_keyborad_state_ffi(len_ptr)
   let len = load64_u(len_ptr)
   {slice: {ptr: ptr, len: len}}
@@ -44,6 +45,7 @@ fn get_mouse_state_ffi(pos_x_ptr: Int, pos_y_ptr: Int) -> Byte = "lunar" "get_mo
 pub fn get_mouse_state() -> MouseState {
   let pos_x_ptr = get_global_buf_ptr()
   let pos_y_ptr = pos_x_ptr + 8
+  log("x_ptr: \{pos_x_ptr}, y_ptr: \{pos_y_ptr}")
   let buttons = get_mouse_state_ffi(pos_x_ptr, pos_y_ptr)
   let x = loadf64(pos_x_ptr)
   let y = loadf64(pos_y_ptr)

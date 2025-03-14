@@ -60,6 +60,8 @@ pub extern "c" fn wasmtime_memory_data(ConstPtr, ConstPtr) [*c]u8;
 pub extern "c" fn wasmtime_func_call(Ptr, ConstPtr, ConstPtr, usize, Ptr, usize, TrapPtr) ?Ptr;
 // fn(store_context, type, callback, env, finalizer, ret)
 pub extern "c" fn wasmtime_func_new(Ptr, ConstPtr, ConstPtr, ?Ptr, ?Ptr, Ptr) void;
+// fn(caller, name, name_len, extern_item) -> bool
+pub extern "c" fn wasmtime_caller_export_get(Ptr, ConstPtr, usize, Ptr) bool;
 
 ///////////////////////////////////////////////////////////////////////////////
 // wasmtime/instance.h
@@ -101,10 +103,10 @@ pub const CallbackFn = *const fn (
     env: Ptr,
     caller: Ptr,
     // no alignment
-    args: [*c]const Value,
+    args: [*]const Value,
     nargs: usize,
     // no alignment
-    results: [*c]Value,
+    results: [*]Value,
     nresults: usize,
 ) callconv(.C) ?Ptr;
 
@@ -116,7 +118,7 @@ pub const ValueUnion = extern union {
     anyref: u128,
     externref: u128,
     funcref: u128,
-    wasmtime_v128: [16]u8,
+    v128: [16]u8,
 };
 
 pub const ValueKind = enum(u8) {
@@ -135,6 +137,8 @@ pub const Value = extern struct {
     kind: ValueKind,
     of: ValueUnion,
 
+    const Self = @This();
+
     pub fn newI32(value: i32) Value {
         return Value{ .kind = .i32, .of = .{ .i32 = value } };
     }
@@ -148,6 +152,11 @@ pub const Value = extern struct {
         return Value{ .kind = .f64, .of = .{ .f64 = value } };
     }
 };
+
+// fn(store_context, val)
+pub extern "c" fn wasmtime_val_unroot(Ptr, Ptr) void;
+// fn(store_context, src, dst)
+pub extern "c" fn wasmtime_val_clone(Ptr, ConstPtr, Ptr) void;
 
 pub const ExternUnion = extern union {
     func: Func,

@@ -164,8 +164,28 @@ pub const Memory = struct {
         return memory;
     }
 
-    pub fn data(self: Self, context: StoreContext) [*c]u8 {
+    pub fn data(self: Self, context: StoreContext) [*]u8 {
         return cdef.wasmtime_memory_data(context.ptr, &self.inner);
+    }
+};
+
+pub const Caller = struct {
+    ptr: *anyopaque,
+
+    const Self = @This();
+
+    pub fn exportGet(self: Self, name: []const u8) ?Extern {
+        var extern_item: Extern = undefined;
+        if (cdef.wasmtime_caller_export_get(self.ptr, name.ptr, name.len, &extern_item)) {
+            return extern_item;
+        } else {
+            return null;
+        }
+    }
+
+    pub fn exportGetMemory(self: Self) ?Memory {
+        const extern_item = self.exportGet("memory") orelse return null;
+        return Memory{ .inner = extern_item.of.memory };
     }
 };
 

@@ -48,26 +48,22 @@ fn to_zig_byte_slice(val1: w.Value, val2: w.Value) []u8 {
 pub fn getKeyboardState(
     env: *anyopaque,
     caller: *anyopaque,
-    args: [*c]const w.Value,
+    args: [*]const w.Value,
     nargs: usize,
-    results: [*c]w.Value,
+    results: [*]w.Value,
     nresults: usize,
 ) callconv(.C) ?*anyopaque {
     _ = env;
     _ = caller;
-    _ = nargs;
-    _ = nresults;
-    std.log.info("getKeyboardState BEGIN", .{});
+    std.log.info("getKeyboardState, nargs: {}, nresults: {}", .{ nargs, nresults });
     const states = jok.io.getKeyboardState().states;
     const mem_data = app.get_memory_data();
-    const len_ptr = to_byte_ptr(args[0]);
-    std.log.info("getKeyboardState 1: len_ptr={}, mem_data={}", .{ len_ptr, @intFromPtr(mem_data) });
-    mem_data[len_ptr] = 33;
-    std.log.info("getKeyboardState 2", .{});
-    std.mem.writeInt(usize, @ptrCast(mem_data[len_ptr..]), states.len, .little);
-    std.log.info("getKeyboardState 3", .{});
+    const arg0 = args[0];
+    const len_ptr = to_byte_ptr(arg0);
+    const bytes: [*]const u8 = @ptrCast(&args[0].of);
+    std.log.info("len_ptr: {}, {}, bytes: {any}", .{ len_ptr, arg0.of.i32, bytes[0..16] });
+    std.mem.writeInt(usize, @ptrCast(mem_data[13480..]), states.len, .little);
     results[0] = w.Value.newI64(@intCast(@intFromPtr(states.ptr)));
-    std.log.info("getKeyboardState END", .{});
     return null;
 }
 
@@ -75,16 +71,14 @@ pub fn getKeyboardState(
 pub fn isKeyPressed(
     env: *anyopaque,
     caller: *anyopaque,
-    args: [*c]const w.Value,
+    args: [*]const w.Value,
     nargs: usize,
-    results: [*c]w.Value,
+    results: [*]w.Value,
     nresults: usize,
 ) callconv(.C) ?*anyopaque {
     _ = env;
     _ = caller;
-    _ = nargs;
-    _ = nresults;
-    std.log.info("isKeyPressed BEGIN", .{});
+    std.log.info("isKeyPressed BEGIN, nargs={}, nresults={}", .{ nargs, nresults });
     const states = to_zig_byte_slice(args[0], args[1]);
     const scancode: c_uint = @intCast(args[2].of.i32);
     const kbd = jok.io.KeyboardState{ .states = states };

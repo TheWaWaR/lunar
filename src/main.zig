@@ -28,7 +28,7 @@ var lunar_quit: w.Func = undefined;
 pub fn get_init_ctx() jok.Context {
     return global_ctx;
 }
-pub fn get_memory_data() [*c]u8 {
+pub fn get_memory_data() [*]u8 {
     return memory.data(store_context);
 }
 
@@ -113,10 +113,6 @@ fn setupWasmtime(ctx: *jok.Context, wasm_data: []const u8) !void {
 
     try host_funcs.defineHostFuncs(linker);
     std.log.info("define host functions success", .{});
-    // >> linker.defineFunc
-    // var params: [1]w.ValType = .{w.ValType.newI32()};
-    // const functype = w.FuncType.new(params[0..], &.{});
-    // defer functype.destroy();
 
     const module = try w.Module.new(engine, wasm_data);
     defer module.destroy();
