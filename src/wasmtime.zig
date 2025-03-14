@@ -3,6 +3,7 @@ const cdef = @import("wasmtime/cdef.zig");
 
 pub const Ptr = cdef.Ptr;
 pub const ConstPtr = cdef.ConstPtr;
+pub const WasmValKind = cdef.WasmValKind;
 pub const ValTypeVec = cdef.ValTypeVec;
 pub const Extern = cdef.Extern;
 pub const Value = cdef.Value;
@@ -27,7 +28,7 @@ pub const WasmtimeError = error{
 
 pub const HostFn = *const fn (args: []const Value, results: []Value) ?Ptr;
 
-pub fn wrapFn(comptime host_fn: HostFn) CallbackFn {
+pub fn wrapHostFn(comptime host_fn: HostFn) CallbackFn {
     return struct {
         fn callback(
             env: Ptr,
@@ -269,6 +270,9 @@ pub const FuncType = struct {
 pub const ValType = struct {
     ptr: Ptr,
 
+    pub fn new(kind: WasmValKind) ValType {
+        return ValType{ .ptr = cdef.wasm_valtype_new(@intFromEnum(kind)) };
+    }
     pub fn newI32() ValType {
         return ValType{ .ptr = cdef.wasm_valtype_new_i32() };
     }

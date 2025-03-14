@@ -225,7 +225,7 @@ pub extern "c" fn wasm_functype_new(Ptr, Ptr) Ptr;
 // fn void wasm_functype_delete(wasm_functype_t *)
 pub extern "c" fn wasm_functype_delete(Ptr) void;
 
-const WasmValKind = enum(u8) {
+pub const WasmValKind = enum(u8) {
     i32,
     i64,
     f32,

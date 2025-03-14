@@ -6,12 +6,30 @@ const io = @import("host_funcs/io.zig");
 const ctx = @import("host_funcs/context.zig");
 const physfs = @import("host_funcs/physfs.zig");
 
-const newI32 = w.ValType.newI32;
-const newI64 = w.ValType.newI64;
-const newF32 = w.ValType.newF32;
-const newF64 = w.ValType.newF64;
+const I32 = w.WasmValKind.i32;
+const I64 = w.WasmValKind.i64;
+const F32 = w.WasmValKind.f32;
+const F64 = w.WasmValKind.f64;
 
 const MODULE: []const u8 = "lunar";
+
+const FUNCS: []const struct {
+    []const u8,
+    w.HostFn,
+    []const w.WasmValKind,
+    []const w.WasmValKind,
+} = &.{
+    // ==== io.zig =====
+    .{ "get_keyborad_state", io.getKeyboardState, &.{I32}, &.{I64} },
+    .{ "is_key_pressed", io.isKeyPressed, &.{ I64, I64, I32 }, &.{I32} },
+    .{ "get_keyboard_modifier_state", io.getKeyboardModifierState, &.{}, &.{I32} },
+    .{ "get_mouse_state", io.getMouseState, &.{ I32, I32 }, &.{I32} },
+    // ==== physfs.zig ====
+    .{ "physfs_mount", physfs.mount, &.{ I32, I32, I32, I32, I32 }, &.{I32} },
+    // ==== context.zig ====
+    .{ "debug_print", ctx.debugPrint, &.{ I32, I32, F32, F32, I32, I32, I32, I32 }, &.{} },
+    .{ "get_canvas_size", ctx.getCanvasSize, &.{ I32, I32 }, &.{} },
+};
 
 var env_data: usize = 0;
 
@@ -21,55 +39,24 @@ pub fn defineHostFuncs(linker: w.Linker) !void {
         @compileError("The size of Value MUST be 24 bytes!");
     }
 
-    inline for (.{
-        // ==== io.zig =====
-        .{
-            "get_keyborad_state",
-            io.getKeyboardState,
-            &.{newI32()},
-            &.{newI64()},
-        },
-        .{
-            "is_key_pressed",
-            io.isKeyPressed,
-            &.{ newI64(), newI64(), newI32() },
-            &.{newI32()},
-        },
-        .{
-            "get_keyboard_modifier_state",
-            io.getKeyboardModifierState,
-            &.{},
-            &.{newI32()},
-        },
-        .{
-            "get_mouse_state",
-            io.getMouseState,
-            &.{ newI32(), newI32() },
-            &.{newI32()},
-        },
-        // ==== physfs.zig ====
-        .{
-            "physfs_mount",
-            physfs.mount,
-            &.{ newI32(), newI32(), newI32(), newI32(), newI32() },
-            &.{newI32()},
-        },
-        // ==== context.zig ====
-        .{
-            "debug_print",
-            ctx.debugPrint,
-            &.{ newI32(), newI32(), newF32(), newF32(), newI32(), newI32(), newI32(), newI32() },
-            &.{},
-        },
-        .{
-            "get_canvas_size",
-            ctx.getCanvasSize,
-            &.{ newI32(), newI32() },
-            &.{},
-        },
-    }) |item| {
+    var params_buf: [16]w.ValType = undefined;
+    var results_buf: [1]w.ValType = undefined;
+    inline for (FUNCS) |item| {
         const func_name, const callback, const params, const results = item;
         std.log.info("define host func: {s}", .{func_name});
-        try linker.defineFunc(MODULE, func_name, w.wrapFn(callback), params, results, &env_data);
+        inline for (params, 0..) |param, idx| {
+            params_buf[idx] = w.ValType.new(param);
+        }
+        inline for (results, 0..) |result, idx| {
+            results_buf[idx] = w.ValType.new(result);
+        }
+        try linker.defineFunc(
+            MODULE,
+            func_name,
+            w.wrapHostFn(callback),
+            params_buf[0..params.len],
+            results_buf[0..results.len],
+            &env_data,
+        );
     }
 }
