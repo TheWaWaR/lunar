@@ -153,7 +153,22 @@ pub const Value = extern struct {
     pub fn newF64(value: f32) Value {
         return Value{ .kind = .f64, .of = .{ .f64 = value } };
     }
+
+    pub fn to_byte_ptr(self: *const Value) usize {
+        return @intCast(self.of.i32);
+    }
+    pub fn to_zig_byte_ptr(val: *const Value) [*]u8 {
+        const ptr_int: usize = @intCast(val.of.i64);
+        const ptr: [*]u8 = @ptrFromInt(ptr_int);
+        return ptr;
+    }
+    pub fn to_zig_byte_slice(self: *const Value, val2: *const Value) []u8 {
+        const ptr = self.to_zig_byte_ptr();
+        const len: usize = @intCast(val2.of.i64);
+        return ptr[0..len];
+    }
 };
+
 
 // fn(store_context, val)
 pub extern "c" fn wasmtime_val_unroot(Ptr, Ptr) void;
