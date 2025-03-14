@@ -3,6 +3,7 @@ const jok = @import("jok");
 
 const w = @import("wasmtime.zig");
 const host_funcs = @import("host_funcs.zig");
+const guest_funcs = @import("guest_funcs.zig");
 
 // max wasm file size: 256MB
 const MAX_WASM_SIZE: usize = 256 * 1024 * 1024;
@@ -21,11 +22,7 @@ var max_call_update_us: i64 = 0;
 // Wasm function call time cost:
 //   * call empty function: 1us ~ 5us
 //   * call function with one log: 30us ~ 150us
-var lunar_init: w.Func = undefined;
-var lunar_event: w.Func = undefined;
-var lunar_update: w.Func = undefined;
-var lunar_draw: w.Func = undefined;
-var lunar_quit: w.Func = undefined;
+var guest: guest_funcs.GuestFuncs = undefined;
 
 pub fn get_init_ctx() jok.Context {
     return global_ctx;
@@ -53,7 +50,7 @@ pub fn init(ctx: jok.Context) !void {
     defer ctx.allocator().free(wasm_data);
     try setupWasmtime(&global_ctx, wasm_data);
 
-    try lunar_init.call(store_context, &.{}, &.{});
+    try guest.init();
 
     std.log.info("init success", .{});
 }
@@ -63,20 +60,20 @@ pub fn event(ctx: jok.Context, e: jok.Event) !void {
     _ = ctx;
     _ = e;
     const event_type = 0;
-    try lunar_event.call(store_context, &.{w.Value.newI32(event_type)}, &.{});
+    try guest.event(event_type);
 }
 
 pub fn update(ctx: jok.Context) !void {
     // your game state updating code
     _ = ctx;
-    try lunar_update.call(store_context, &.{}, &.{});
+    try guest.update();
 }
 
 pub fn draw(ctx: jok.Context) !void {
     // your drawing code
     _ = ctx;
     const t1 = std.time.microTimestamp();
-    try lunar_draw.call(store_context, &.{}, &.{});
+    try guest.draw();
     const dt = std.time.microTimestamp() - t1;
     if (dt > max_call_update_us) {
         max_call_update_us = dt;
@@ -89,7 +86,7 @@ pub fn quit(ctx: jok.Context) void {
     // your deinit code
     _ = ctx;
     if (wasmtime_init_success) {
-        lunar_quit.call(store_context, &.{}, &.{}) catch {
+        guest.quit() catch {
             std.log.err("call lunar_quit error", .{});
         };
         store.destroy();
@@ -126,16 +123,6 @@ fn setupWasmtime(ctx: *jok.Context, wasm_data: []const u8) !void {
     defer module.destroy();
 
     const instance = try linker.instantiate(store_context, module);
-    inline for (.{
-        .{ "lunar_init", &lunar_init },
-        .{ "lunar_event", &lunar_event },
-        .{ "lunar_update", &lunar_update },
-        .{ "lunar_draw", &lunar_draw },
-        .{ "lunar_quit", &lunar_quit },
-    }) |item| {
-        const name, const func = item;
-        const extern_value: w.Extern = instance.exportGet(store_context, name).?;
-        func.* = w.Func{ .inner = extern_value.of.func };
-    }
+    guest = try guest_funcs.exportGetGuestFuncs(instance, store_context);
     wasmtime_init_success = true;
 }
