@@ -26,30 +26,25 @@ pub fn defineHostFuncs(linker: w.Linker) !void {
         std.log.info("define func: {s}", .{func_name});
         try linker.defineFunc(MODULE, func_name, callback, params, results, &env_data);
     }
+    // Ensure align with C type: wasmtime_val_t
+    std.debug.assert(@sizeOf(w.Value) == 24);
 }
 
-fn to_byte_ptr(val: w.Value) usize {
+fn to_byte_ptr(val: *const w.Value) usize {
     return @intCast(val.of.i32);
 }
 
-fn to_zig_byte_ptr(val: w.Value) [*]u8 {
+fn to_zig_byte_ptr(val: *const w.Value) [*]u8 {
     const ptr_int: usize = @intCast(val.of.i64);
     const ptr: [*]u8 = @ptrFromInt(ptr_int);
     return ptr;
 }
 
-fn to_zig_byte_slice(val1: w.Value, val2: w.Value) []u8 {
+fn to_zig_byte_slice(val1: *const w.Value, val2: *const w.Value) []u8 {
     const ptr = to_zig_byte_ptr(val1);
     const len: usize = @intCast(val2.of.i64);
     return ptr[0..len];
 }
-
-fn log_value(name: []const u8, val: w.Value) void {
-    const bytes: [*]const u8 = @ptrCast(&val.of);
-    std.log.info("bytes: {any} ({any}) == {s}", .{ bytes[0..16], val.kind, name });
-}
-
-// FIXME: bug from: wasmtime/crates/c-api/src/func.rs => c_callback_to_rust_fn()
 
 // [moonbit]: fn get_keyborad_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyborad_state"
 pub fn getKeyboardState(
@@ -62,15 +57,12 @@ pub fn getKeyboardState(
 ) callconv(.C) ?*anyopaque {
     _ = env;
     _ = caller;
-    std.log.info("getKeyboardState, nargs: {}, nresults: {}", .{ nargs, nresults });
-    log_value("args[0]", args[0]);
-    log_value("results[0]", results[0]);
+    _ = nargs;
+    _ = nresults;
     const states = jok.io.getKeyboardState().states;
     const mem_data = app.get_memory_data();
-    const arg0 = args[0];
-    const len_ptr = to_byte_ptr(arg0);
-    std.log.info("len_ptr: {}, {}, len={}, ptr={}", .{ len_ptr, arg0.of.i32, states.len, @intFromPtr(states.ptr) });
-    std.mem.writeInt(usize, @ptrCast(mem_data[13480..]), states.len, .little);
+    const len_ptr = to_byte_ptr(&args[0]);
+    std.mem.writeInt(usize, @ptrCast(mem_data[len_ptr..]), states.len, .little);
     results[0] = w.Value.newI64(@intCast(@intFromPtr(states.ptr)));
     return null;
 }
@@ -86,16 +78,12 @@ pub fn isKeyPressed(
 ) callconv(.C) ?*anyopaque {
     _ = env;
     _ = caller;
-    std.log.info("isKeyPressed BEGIN, nargs={}, nresults={}", .{ nargs, nresults });
-    log_value("args[0]", args[0]);
-    log_value("args[1]", args[1]);
-    log_value("args[2]", args[2]);
-    log_value("results[0]", results[0]);
-    const states = to_zig_byte_slice(args[0], args[1]);
+    _ = nargs;
+    _ = nresults;
+    const states = to_zig_byte_slice(&args[0], &args[1]);
     const scancode: c_uint = @intCast(args[2].of.i32);
     const kbd = jok.io.KeyboardState{ .states = states };
     const is_pressed = kbd.isPressed(@enumFromInt(scancode));
     results[0] = w.Value.newI32(@intFromBool(is_pressed));
-    std.log.info("isKeyPressed END", .{});
     return null;
 }

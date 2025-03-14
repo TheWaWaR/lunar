@@ -21,6 +21,8 @@ const ConstPtr = cdef.ConstPtr;
 const ValTypeVec = cdef.ValTypeVec;
 pub const Extern = cdef.Extern;
 pub const Value = cdef.Value;
+pub const ValueKind = cdef.ValueKind;
+pub const ValueUnion = cdef.ValueUnion;
 pub const CallbackFn = cdef.CallbackFn;
 
 var err_msg_buf: [1024]u8 = undefined;

@@ -110,17 +110,19 @@ pub const CallbackFn = *const fn (
     nresults: usize,
 ) callconv(.C) ?Ptr;
 
+// wasmtime/val.h: wasmtime_valunion_t
 pub const ValueUnion = extern union {
     i32: i32,
     i64: i64,
     f32: f32,
     f64: f64,
-    anyref: u128,
-    externref: u128,
-    funcref: u128,
+    anyref: [16]u8,
+    externref: [16]u8,
+    funcref: [16]u8,
     v128: [16]u8,
 };
 
+// wasmtime/val.h: wasmtime_valkind_t
 pub const ValueKind = enum(u8) {
     i32 = 0,
     i64 = 1,
