@@ -28,7 +28,7 @@ const readColor = common.readColor;
 //   append: Bool,
 // ) -> Bool = "lunar" "physfs_mount"
 pub fn mount(args: []const Value, results: []Value) ?Ptr {
-    const dir, const mount_point = readFromUtf16StrWithApp2(args[0..2], args[2..4]);
+    const dir, const mount_point = readFromUtf16StrWithApp2(args[0..2], args[2..4]) orelse return null;
     const append: bool = args[4].of.i32 > 0;
 
     physfs.mount(@ptrCast(dir), @ptrCast(mount_point), append) catch |err| {

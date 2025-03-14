@@ -9,7 +9,8 @@
         "lunar_event",
         "lunar_update",
         "lunar_draw",
-        "lunar_quit"
+        "lunar_quit",
+        "lunar_signal"
       ],
       "export-memory-name": "memory",
       "import-memory": {

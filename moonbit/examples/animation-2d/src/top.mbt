@@ -28,3 +28,6 @@ pub fn lunar_draw() -> Unit {
 pub fn lunar_quit() -> Unit {
   @lunar.log("> moon.quit")
 }
+
+/// Receive AnimationSystem signal callback
+pub fn lunar_signal() -> Unit { }

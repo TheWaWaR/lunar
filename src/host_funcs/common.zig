@@ -6,30 +6,45 @@ const get_app = @import("../main.zig").get_app;
 const Allocator = std.mem.Allocator;
 const Value = w.Value;
 
-pub fn readFromUtf16StrWithApp(args: []const Value) []u8 {
+pub fn readFromUtf16StrWithApp(args: []const Value) ?[]u8 {
     const app = get_app();
     const mem_data = app.guest_mem_data();
     const text = readFromUtf16Str(&app.bytes_buffer, mem_data, args) catch |err| {
         std.log.err("read utf16 string err: {}", .{err});
-        return &.{};
+        return null;
     };
     app.bytes_buffer.clearRetainingCapacity();
     return text;
 }
 
-pub fn readFromUtf16StrWithApp2(args1: []const Value, args2: []const Value) struct { []u8, []u8 } {
+pub fn readFromUtf16StrWithApp2(args1: []const Value, args2: []const Value) ?struct { []u8, []u8 } {
     const app = get_app();
     const mem_data = app.guest_mem_data();
     const text1 = readFromUtf16Str(&app.bytes_buffer, mem_data, args1) catch |err| {
         std.log.err("read #1 utf16 string err: {}", .{err});
-        return .{&.{}, &.{}};
+        return null;
     };
     const text2 = readFromUtf16Str(&app.bytes_buffer, mem_data, args2) catch |err| {
         std.log.err("read #2 utf16 string err: {}", .{err});
-        return .{&.{}, &.{}};
+        return null;
     };
     app.bytes_buffer.clearRetainingCapacity();
     return .{ text1, text2[text1.len + 1 ..] };
+}
+
+pub fn readFromUtf16StrAlloc(args: []const Value) ?[]u8 {
+    const ptr = args[0].to_guest_ptr();
+    const len: usize = @intCast(args[1].of.i32);
+    const app = get_app();
+    const mem_data = app.guest_mem_data();
+    const text = std.unicode.utf16LeToUtf8Alloc(
+        app.ctx.allocator(),
+        @alignCast(@ptrCast(mem_data[ptr .. ptr + len * 2])),
+    ) catch |err| {
+        std.log.err("read utf16 string alloc err: {}", .{err});
+        return null;
+    };
+    return text;
 }
 
 // The returned string have a `\x00` appended to the end.

@@ -1,10 +1,10 @@
 const std = @import("std");
-const jok = @import("jok");
 const w = @import("wasmtime.zig");
 
 const io = @import("host_funcs/io.zig");
 const ctx = @import("host_funcs/context.zig");
 const physfs = @import("host_funcs/physfs.zig");
+const j2d = @import("host_funcs/j2d.zig");
 
 const I32 = w.WasmValKind.i32;
 const I64 = w.WasmValKind.i64;
@@ -29,6 +29,10 @@ const FUNCS: []const struct {
     // ==== context.zig ====
     .{ "debug_print", ctx.debugPrint, &.{ I32, I32, F32, F32, I32, I32, I32, I32 }, &.{} },
     .{ "get_canvas_size", ctx.getCanvasSize, &.{ I32, I32 }, &.{} },
+    // ==== j2d.zig ====
+    .{ "create_animation_system", j2d.createAnimationSystem, &.{ I32, I32 }, &.{I64} },
+    .{ "connect_signal", j2d.connectSignal, &.{I64}, &.{I32} },
+    .{ "sprite_sheet_from_pictures_in_dir", j2d.spriteSheetFromPicturesInDir, &.{ I32, I32, I32, I32 }, &.{I64} },
 };
 
 var env_data: usize = 0;

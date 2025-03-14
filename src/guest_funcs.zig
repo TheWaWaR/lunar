@@ -11,6 +11,7 @@ pub const GuestFuncs = struct {
     lunar_update: w.Func = undefined,
     lunar_draw: w.Func = undefined,
     lunar_quit: w.Func = undefined,
+    lunar_signal: w.Func = undefined,
 
     const Self = @This();
 
@@ -29,6 +30,10 @@ pub const GuestFuncs = struct {
     pub fn quit(self: *Self) !void {
         try self.lunar_quit.call(self.context, &.{}, &.{});
     }
+
+    pub fn emit(self: *Self) !void {
+        try self.lunar_signal.call(self.context, &.{}, &.{});
+    }
 };
 
 pub fn exportGetGuestFuncs(instance: w.Instance, context: w.StoreContext) !GuestFuncs {
@@ -39,6 +44,7 @@ pub fn exportGetGuestFuncs(instance: w.Instance, context: w.StoreContext) !Guest
         .{ "lunar_update", &funcs.lunar_update },
         .{ "lunar_draw", &funcs.lunar_draw },
         .{ "lunar_quit", &funcs.lunar_quit },
+        .{ "lunar_signal", &funcs.lunar_signal },
     }) |item| {
         const name, const func = item;
         const extern_value: w.Extern = instance.exportGet(context, name).?;
