@@ -69,7 +69,7 @@ pub fn getKeyboardState(
     const mem_data = app.get_memory_data();
     const arg0 = args[0];
     const len_ptr = to_byte_ptr(arg0);
-    std.log.info("len_ptr: {}, {}", .{ len_ptr, arg0.of.i32 });
+    std.log.info("len_ptr: {}, {}, len={}, ptr={}", .{ len_ptr, arg0.of.i32, states.len, @intFromPtr(states.ptr) });
     std.mem.writeInt(usize, @ptrCast(mem_data[13480..]), states.len, .little);
     results[0] = w.Value.newI64(@intCast(@intFromPtr(states.ptr)));
     return null;
