@@ -13,14 +13,14 @@ const AppData = struct {
     engine: w.Engine = undefined,
     memory: w.Memory = undefined,
     store: w.Store = undefined,
-    store_context: w.StoreContext = undefined,
+    context: w.StoreContext = undefined,
     guest: guest_funcs.GuestFuncs = undefined,
     wasmtime_init_success: bool = false,
 
     const Self = @This();
 
     pub fn guest_mem_data(self: *Self) [*]u8 {
-        return self.memory.data(self.store_context);
+        return self.memory.data(self.context);
     }
 };
 
@@ -71,15 +71,19 @@ pub fn update(ctx: jok.Context) !void {
 }
 
 pub fn draw(ctx: jok.Context) !void {
+    try ctx.renderer().clear(.none);
+    ctx.displayStats(.{});
     // your drawing code
-    _ = ctx;
     const t1 = std.time.microTimestamp();
     try app.guest.draw();
     const dt = std.time.microTimestamp() - t1;
     if (dt > max_call_update_us) {
         max_call_update_us = dt;
         // cost: less than 100us
-        std.log.info("New max update() cost: {}us", .{max_call_update_us});
+        std.log.info(
+            "New max draw() cost: {}us, fps={d:.1}",
+            .{ max_call_update_us, ctx.fps() },
+        );
     }
 }
 
@@ -101,21 +105,21 @@ fn setupWasmtime(ctx: *jok.Context, wasm_data: []const u8) !void {
 
     app.engine = try w.Engine.new();
     app.store = try w.Store.new(app.engine, @ptrCast(&store_data));
-    app.store_context = app.store.context();
+    app.context = app.store.context();
 
     const wasi_config = w.WasiConfig.new();
     wasi_config.inheritStdout();
     wasi_config.inheritStderr();
-    try app.store_context.setWasi(wasi_config);
+    try app.context.setWasi(wasi_config);
 
     const linker = w.Linker.new(app.engine);
     defer linker.destroy();
 
     try linker.defineWasi();
     const memorytype = w.MemoryType.new(1, false, 0, false, false);
-    app.memory = try w.Memory.new(app.store_context, memorytype);
+    app.memory = try w.Memory.new(app.context, memorytype);
     const mem_extern = w.Extern{ .kind = .extern_memory, .of = .{ .memory = app.memory.inner } };
-    try linker.define(app.store_context, "env", "memory", &mem_extern);
+    try linker.define(app.context, "env", "memory", &mem_extern);
 
     try host_funcs.defineHostFuncs(linker);
     std.log.info("define host functions success", .{});
@@ -123,7 +127,9 @@ fn setupWasmtime(ctx: *jok.Context, wasm_data: []const u8) !void {
     const module = try w.Module.new(app.engine, wasm_data);
     defer module.destroy();
 
-    const instance = try linker.instantiate(app.store_context, module);
-    app.guest = try guest_funcs.exportGetGuestFuncs(instance, app.store_context);
+    const instance = try linker.instantiate(app.context, module);
+    app.guest = try guest_funcs.exportGetGuestFuncs(instance, app.context);
+    std.log.info("export guest functions success", .{});
+    std.log.info("init wasmtime success", .{});
     app.wasmtime_init_success = true;
 }

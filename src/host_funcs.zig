@@ -33,7 +33,7 @@ pub fn defineHostFuncs(linker: w.Linker) !void {
         },
     }) |item| {
         const func_name, const callback, const params, const results = item;
-        std.log.info("define func: {s}", .{func_name});
+        std.log.info("define host func: {s}", .{func_name});
         try linker.defineFunc(MODULE, func_name, w.wrapFn(callback), params, results, &env_data);
     }
 }
