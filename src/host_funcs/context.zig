@@ -24,7 +24,7 @@ const readColor = common.readColor;
 //   pos_x: Float, pos_y: Float,
 //   r: Byte, g: Byte, b: Byte, a: Byte,
 // ) = "lunar" "debug_print"
-pub fn debugPrint(args: [*]const Value, _: [*]Value) ?Ptr {
+pub fn debugPrint(args: []const Value, _: []Value) ?Ptr {
     const text = readFromUtf16StrWithApp(args[0..2]);
     const pos = readPoint(args[2..4]);
     const color = readColor(args[4..8]);

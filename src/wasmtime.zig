@@ -25,7 +25,7 @@ pub const WasmtimeError = error{
     SetWasiError,
 };
 
-pub const HostFn = *const fn (args: [*]const Value, results: [*]Value) ?Ptr;
+pub const HostFn = *const fn (args: []const Value, results: []Value) ?Ptr;
 
 pub fn wrapFn(comptime host_fn: HostFn) CallbackFn {
     return struct {
@@ -39,9 +39,7 @@ pub fn wrapFn(comptime host_fn: HostFn) CallbackFn {
         ) callconv(.C) ?Ptr {
             _ = env;
             _ = caller;
-            _ = nargs;
-            _ = nresults;
-            return host_fn(args, results);
+            return host_fn(args[0..nargs], results[0..nresults]);
         }
     }.callback;
 }
