@@ -5,6 +5,6 @@ pub struct ZigSlice {
 }
 
 pub struct Point {
-  x: Double
-  y: Double
+  x: Float
+  y: Float
 }
