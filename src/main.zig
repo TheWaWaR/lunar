@@ -19,7 +19,9 @@ const AppData = struct {
     store: w.Store = undefined,
     context: w.StoreContext = undefined,
     guest: guest_funcs.GuestFuncs = undefined,
+
     wasmtime_init_success: bool = false,
+    bytes_buffer: std.ArrayList(u8) = undefined,
 
     const Self = @This();
 
@@ -38,6 +40,7 @@ var max_call_update_us: i64 = 0;
 
 pub fn init(ctx: jok.Context) !void {
     app.ctx = ctx;
+    app.bytes_buffer = try std.ArrayList(u8).initCapacity(ctx.allocator(), 2048);
 
     const args = try std.process.argsAlloc(ctx.allocator());
     defer std.process.argsFree(ctx.allocator(), args);
@@ -94,6 +97,7 @@ pub fn draw(ctx: jok.Context) !void {
 pub fn quit(ctx: jok.Context) void {
     // your deinit code
     _ = ctx;
+    app.bytes_buffer.deinit();
     if (app.wasmtime_init_success) {
         app.guest.quit() catch {
             std.log.err("call lunar_quit error", .{});
