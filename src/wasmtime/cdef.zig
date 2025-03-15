@@ -154,6 +154,13 @@ pub const Value = extern struct {
         return Value{ .kind = .f64, .of = .{ .f64 = value } };
     }
 
+    pub fn to_u32(self: *const Value) u32 {
+        return @intCast(self.of.i32);
+    }
+    pub fn to_u64(self: *const Value) u64 {
+        return @intCast(self.of.i64);
+    }
+
     pub fn to_guest_ptr(self: *const Value) usize {
         return @intCast(self.of.i32);
     }

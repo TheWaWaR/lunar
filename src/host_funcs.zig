@@ -30,11 +30,11 @@ const FUNCS: []const struct {
     .{ "debug_print", ctx.debugPrint, &.{ I32, I32, F32, F32, I32, I32, I32, I32 }, &.{} },
     .{ "get_canvas_size", ctx.getCanvasSize, &.{ I32, I32 }, &.{} },
     // ==== j2d.zig ====
-    .{ "create_animation_system", j2d.createAnimationSystem, &.{ I32, I32 }, &.{I64} },
-    .{ "connect_signal", j2d.connectSignal, &.{I64}, &.{I32} },
-    .{ "add_simple_animation", j2d.addSimpleAnimation, &.{ I64, I32, I32, I32, I32, I32 }, &.{I32} },
-    .{ "sprite_sheet_from_pictures_in_dir", j2d.spriteSheetFromPicturesInDir, &.{ I32, I32, I32, I32 }, &.{I64} },
-    .{ "get_sprite_by_name", j2d.getSpriteByName, &.{ I64, I32, I32, I32 }, &.{I32} },
+    .{ "create_animation_system", j2d.animation_system.create, &.{ I32, I32 }, &.{I64} },
+    .{ "connect_signal", j2d.animation_system.connectSignal, &.{I64}, &.{I32} },
+    .{ "add_simple_animation", j2d.animation_system.addSimple, &.{ I64, I32, I32, I32, I32, I32 }, &.{I32} },
+    .{ "sprite_sheet_from_pictures_in_dir", j2d.sprite_sheet.fromPicturesInDir, &.{ I32, I32, I32, I32 }, &.{I64} },
+    .{ "get_sprite_by_name", j2d.sprite_sheet.getSpriteByName, &.{ I64, I32, I32, I32 }, &.{I32} },
 };
 
 var env_data: usize = 0;

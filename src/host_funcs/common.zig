@@ -65,9 +65,10 @@ pub fn readFromUtf16Str(
     return buf.items;
 }
 
-pub fn readBytes(mem_data: [*]const u8, args: []const Value) []const u8 {
+pub fn readBytes(args: []const Value) []const u8 {
     const ptr = args[0].to_guest_ptr();
     const len: usize = @intCast(args[1].of.i32);
+    const mem_data = get_app().guest_mem_data();
     return mem_data[ptr .. ptr + len];
 }
 
@@ -87,7 +88,6 @@ pub fn readColor(args: []const Value) jok.Color {
 
 pub fn readSprites(arg: *const Value, items: []Sprite) void {
     var guest_ptr = arg.to_guest_ptr();
-    const mem_data = get_app().guest_mem_data();
     for (0..items.len) |idx| {
         var item = &items[idx];
         inline for (.{
@@ -98,17 +98,16 @@ pub fn readSprites(arg: *const Value, items: []Sprite) void {
             &item.uv1.x,
             &item.uv1.y,
         }) |host_ptr| {
-            guest_ptr += readField(f32, mem_data, guest_ptr, host_ptr);
+            guest_ptr += readNumber(f32, guest_ptr, host_ptr);
         }
         var ptr_int: usize = 0;
-        guest_ptr += readField(usize, mem_data, guest_ptr, &ptr_int);
+        guest_ptr += readNumber(usize, guest_ptr, &ptr_int);
         item.tex.ptr = @ptrFromInt(ptr_int);
     }
 }
 
 pub fn writeSprite(arg: *const Value, sp: Sprite) void {
-    var ptr = arg.to_guest_ptr();
-    const mem_data = get_app().guest_mem_data();
+    var guest_ptr = arg.to_guest_ptr();
     inline for (.{
         sp.width,
         sp.height,
@@ -118,27 +117,37 @@ pub fn writeSprite(arg: *const Value, sp: Sprite) void {
         sp.uv1.y,
         @intFromPtr(sp.tex.ptr),
     }) |val| {
-        ptr += writeField(mem_data, ptr, val);
+        guest_ptr += writeNumber(guest_ptr, val);
     }
 }
 
-fn readField(comptime T: type, mem_data: [*]u8, guest_ptr: usize, ptr: *T) usize {
+pub fn readNumberArg(comptime T: type, arg: *const Value, ptr: *T) usize {
+    return readNumber(T, arg.to_guest_ptr(), ptr);
+}
+
+pub fn readNumber(comptime T: type, guest_ptr: usize, ptr: *T) usize {
     const size = @sizeOf(T);
     if (size != 4 and size != 8) {
         @compileError("Invalid size of type value");
     }
     const IT = if (size == 4) u32 else u64;
+    const mem_data = get_app().guest_mem_data();
     const int_value = std.mem.readInt(IT, @ptrCast(mem_data[guest_ptr..]), .little);
     ptr.* = @bitCast(int_value);
     return size;
 }
 
-fn writeField(mem_data: [*]u8, ptr: usize, val: anytype) usize {
+pub fn writeNumberArg(arg: *const Value, val: anytype) usize {
+    return writeNumber(arg.to_guest_ptr(), val);
+}
+
+pub fn writeNumber(guest_ptr: usize, val: anytype) usize {
     const size = @sizeOf(@TypeOf(val));
     if (size != 4 and size != 8) {
         @compileError("Invalid size of type value");
     }
     const T = if (size == 4) u32 else u64;
-    std.mem.writeInt(T, @ptrCast(mem_data[ptr..]), @bitCast(val), .little);
+    const mem_data = get_app().guest_mem_data();
+    std.mem.writeInt(T, @ptrCast(mem_data[guest_ptr..]), @bitCast(val), .little);
     return size;
 }

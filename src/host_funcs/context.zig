@@ -23,20 +23,14 @@ pub fn debugPrint(args: []const Value, _: []Value) ?Ptr {
     const text = c.readFromUtf16StrWithApp(args[0..2]) orelse return null;
     const pos = c.readPoint(args[2..4]);
     const color = c.readColor(args[4..8]);
-
     get_app().ctx.debugPrint(text, .{ .pos = pos, .color = color });
     return null;
 }
 
 // [moonbit] fn get_canvas_size(width_ptr: Int, height_ptr: Int) = "lunar" "get_canvas_size"
 pub fn getCanvasSize(args: []const Value, _: []Value) ?Ptr {
-    const width_ptr: usize = @intCast(args[0].of.i32);
-    const height_ptr: usize = @intCast(args[1].of.i32);
-
-    const app = get_app();
-    const mem_data = app.guest_mem_data();
-    const size = app.ctx.getCanvasSize();
-    std.mem.writeInt(u32, @ptrCast(mem_data[width_ptr..]), size.width, .little);
-    std.mem.writeInt(u32, @ptrCast(mem_data[height_ptr..]), size.height, .little);
+    const size = get_app().ctx.getCanvasSize();
+    _ = c.writeNumberArg(&args[0], size.width);
+    _ = c.writeNumberArg(&args[1], size.height);
     return null;
 }

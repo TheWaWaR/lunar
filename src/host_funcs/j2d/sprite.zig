@@ -1,13 +1,9 @@
+
 const std = @import("std");
 const jok = @import("jok");
-const w = @import("../wasmtime.zig");
-const c = @import("common.zig");
-const get_app = @import("../main.zig").get_app;
-
-pub const animation_system = @import("j2d/animation_system.zig");
-pub const affine_transform = @import("j2d/affine_transform.zig");
-pub const sprite_sheet = @import("j2d/sprite_sheet.zig");
-pub const sprite = @import("j2d/sprite.zig");
+const w = @import("../../wasmtime.zig");
+const c = @import("../common.zig");
+const get_app = @import("../../main.zig").get_app;
 
 const j2d = jok.j2d;
 const Value = w.Value;

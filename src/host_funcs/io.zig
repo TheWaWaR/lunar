@@ -1,5 +1,6 @@
 const std = @import("std");
 const jok = @import("jok");
+const c = @import("common.zig");
 const w = @import("../wasmtime.zig");
 const get_app = @import("../main.zig").get_app;
 
@@ -14,11 +15,8 @@ const to_host_byte_slice = Value.to_host_byte_slice;
 
 // [moonbit]: fn get_keyborad_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyborad_state"
 pub fn getKeyboardState(args: []const Value, results: []Value) ?Ptr {
-    const len_ptr = args[0].to_guest_ptr();
-
     const states = jok.io.getKeyboardState().states;
-    const mem_data = get_app().guest_mem_data();
-    std.mem.writeInt(usize, @ptrCast(mem_data[len_ptr..]), states.len, .little);
+    _ = c.writeNumberArg(&args[0], states.len);
     results[0] = newi64(@intCast(@intFromPtr(states.ptr)));
     return null;
 }
@@ -42,13 +40,9 @@ pub fn getKeyboardModifierState(_: []const Value, results: []Value) ?Ptr {
 
 // [moonbit] fn get_mouse_state_ffi(pos_x_ptr: Int, pos_y_ptr: Int) -> Byte = "lunar" "get_mouse_state"
 pub fn getMouseState(args: []const Value, results: []Value) ?Ptr {
-    const pos_x_ptr = args[0].to_guest_ptr();
-    const pos_y_ptr = args[1].to_guest_ptr();
-
-    const mem_data = get_app().guest_mem_data();
     const state = jok.io.getMouseState();
-    std.mem.writeInt(u32, @ptrCast(mem_data[pos_x_ptr..]), @bitCast(state.pos.x), .little);
-    std.mem.writeInt(u32, @ptrCast(mem_data[pos_y_ptr..]), @bitCast(state.pos.y), .little);
+    _ = c.writeNumberArg(&args[0], state.pos.x);
+    _ = c.writeNumberArg(&args[1], state.pos.y);
     results[0] = newi32(@intCast(state.buttons.storage));
     return null;
 }
