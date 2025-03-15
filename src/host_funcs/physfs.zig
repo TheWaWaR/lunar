@@ -1,7 +1,7 @@
 const std = @import("std");
 const jok = @import("jok");
 const w = @import("../wasmtime.zig");
-const common = @import("common.zig");
+const c = @import("common.zig");
 
 const get_app = @import("../main.zig").get_app;
 const physfs = jok.physfs;
@@ -15,12 +15,6 @@ const newf32 = Value.newF32;
 const newf64 = Value.newF64;
 const to_host_byte_slice = Value.to_host_byte_slice;
 
-const readBytes = common.readBytes;
-const readFromUtf16StrWithApp = common.readFromUtf16StrWithApp;
-const readFromUtf16StrWithApp2 = common.readFromUtf16StrWithApp2;
-const readPoint = common.readPoint;
-const readColor = common.readColor;
-
 // [moonbit]
 // fn physfs_mount(
 //   dir_ptr: Int, dir_len: Int,
@@ -28,7 +22,7 @@ const readColor = common.readColor;
 //   append: Bool,
 // ) -> Bool = "lunar" "physfs_mount"
 pub fn mount(args: []const Value, results: []Value) ?Ptr {
-    const dir, const mount_point = readFromUtf16StrWithApp2(args[0..2], args[2..4]) orelse return null;
+    const dir, const mount_point = c.readFromUtf16StrWithApp2(args[0..2], args[2..4]) orelse return null;
     const append: bool = args[4].of.i32 > 0;
 
     physfs.mount(@ptrCast(dir), @ptrCast(mount_point), append) catch |err| {

@@ -32,7 +32,9 @@ const FUNCS: []const struct {
     // ==== j2d.zig ====
     .{ "create_animation_system", j2d.createAnimationSystem, &.{ I32, I32 }, &.{I64} },
     .{ "connect_signal", j2d.connectSignal, &.{I64}, &.{I32} },
+    .{ "add_simple_animation", j2d.addSimpleAnimation, &.{ I64, I32, I32, I32, I32, I32 }, &.{I32} },
     .{ "sprite_sheet_from_pictures_in_dir", j2d.spriteSheetFromPicturesInDir, &.{ I32, I32, I32, I32 }, &.{I64} },
+    .{ "get_sprite_by_name", j2d.getSpriteByName, &.{ I64, I32, I32, I32 }, &.{I32} },
 };
 
 var env_data: usize = 0;

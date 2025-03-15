@@ -5,6 +5,7 @@ const get_app = @import("../main.zig").get_app;
 
 const Allocator = std.mem.Allocator;
 const Value = w.Value;
+const Sprite = jok.j2d.Sprite;
 
 pub fn readFromUtf16StrWithApp(args: []const Value) ?[]u8 {
     const app = get_app();
@@ -82,4 +83,62 @@ pub fn readColor(args: []const Value) jok.Color {
     const b: u8 = @intCast(args[2].of.i32);
     const a: u8 = @intCast(args[3].of.i32);
     return jok.Color.rgba(r, g, b, a);
+}
+
+pub fn readSprites(arg: *const Value, items: []Sprite) void {
+    var guest_ptr = arg.to_guest_ptr();
+    const mem_data = get_app().guest_mem_data();
+    for (0..items.len) |idx| {
+        var item = &items[idx];
+        inline for (.{
+            &item.width,
+            &item.height,
+            &item.uv0.x,
+            &item.uv0.y,
+            &item.uv1.x,
+            &item.uv1.y,
+        }) |host_ptr| {
+            guest_ptr += readField(f32, mem_data, guest_ptr, host_ptr);
+        }
+        var ptr_int: usize = 0;
+        guest_ptr += readField(usize, mem_data, guest_ptr, &ptr_int);
+        item.tex.ptr = @ptrFromInt(ptr_int);
+    }
+}
+
+pub fn writeSprite(arg: *const Value, sp: Sprite) void {
+    var ptr = arg.to_guest_ptr();
+    const mem_data = get_app().guest_mem_data();
+    inline for (.{
+        sp.width,
+        sp.height,
+        sp.uv0.x,
+        sp.uv0.y,
+        sp.uv1.x,
+        sp.uv1.y,
+        @intFromPtr(sp.tex.ptr),
+    }) |val| {
+        ptr += writeField(mem_data, ptr, val);
+    }
+}
+
+fn readField(comptime T: type, mem_data: [*]u8, guest_ptr: usize, ptr: *T) usize {
+    const size = @sizeOf(T);
+    if (size != 4 and size != 8) {
+        @compileError("Invalid size of type value");
+    }
+    const IT = if (size == 4) u32 else u64;
+    const int_value = std.mem.readInt(IT, @ptrCast(mem_data[guest_ptr..]), .little);
+    ptr.* = @bitCast(int_value);
+    return size;
+}
+
+fn writeField(mem_data: [*]u8, ptr: usize, val: anytype) usize {
+    const size = @sizeOf(@TypeOf(val));
+    if (size != 4 and size != 8) {
+        @compileError("Invalid size of type value");
+    }
+    const T = if (size == 4) u32 else u64;
+    std.mem.writeInt(T, @ptrCast(mem_data[ptr..]), @bitCast(val), .little);
+    return size;
 }
