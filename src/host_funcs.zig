@@ -26,9 +26,12 @@ pub fn defineHostFuncs(linker: w.Linker) !void {
 
     var params_buf: [16]w.ValType = undefined;
     var results_buf: [1]w.ValType = undefined;
-    inline for (FUNCS) |item| {
+    inline for (FUNCS, 1..) |item, func_idx| {
         const func_name, const callback, const params, const results = item;
-        std.log.info("define host func: {s}", .{func_name});
+        std.log.info(
+            "define host #{} {s}({}) -> {}",
+            .{ func_idx, func_name, params.len, results.len },
+        );
         inline for (params, 0..) |param, idx| {
             params_buf[idx] = w.ValType.new(param);
         }

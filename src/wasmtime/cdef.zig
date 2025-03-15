@@ -180,7 +180,7 @@ pub const Value = extern struct {
     }
 
     pub fn to_guest_ptr(self: *const Value) usize {
-        return self.to_number(usize);
+        return @intCast(self.to_number(u32));
     }
     pub fn to_host_ptr(val: *const Value) *anyopaque {
         const ptr_int: usize = @intCast(val.of.i64);

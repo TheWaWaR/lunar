@@ -5,7 +5,7 @@ pub fn lunar_init() -> Unit {
 pub fn lunar_event(_: UInt) -> Unit { }
 
 pub fn lunar_update() -> Unit { 
-  let kbd = @lunar.get_keyborad_state()
+  let kbd = @lunar.get_keyboard_state()
   if kbd.is_pressed(@lunar.SDL_SCANCODE_A) {
     @lunar.log("pressed: A")
   } else if kbd.is_pressed(@lunar.SDL_SCANCODE_S) {

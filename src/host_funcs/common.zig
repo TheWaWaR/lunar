@@ -3,6 +3,7 @@ const jok = @import("jok");
 const w = @import("../wasmtime.zig");
 const get_app = @import("../main.zig").get_app;
 
+const assert = std.debug.assert;
 const Allocator = std.mem.Allocator;
 const Value = w.Value;
 const Sprite = jok.j2d.Sprite;
@@ -150,9 +151,7 @@ pub fn writeNumberArg(arg: *const Value, val: anytype) usize {
 
 pub fn writeNumber(guest_ptr: usize, val: anytype) usize {
     const size = @sizeOf(@TypeOf(val));
-    if (size != 4 and size != 8) {
-        @compileError("Invalid size of type value");
-    }
+    comptime assert(size == 4 or size == 8);
     const T = if (size == 4) u32 else u64;
     const mem_data = get_app().guest_mem_data();
     std.mem.writeInt(T, @ptrCast(mem_data[guest_ptr..]), @bitCast(val), .little);

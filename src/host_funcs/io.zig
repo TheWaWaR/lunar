@@ -19,13 +19,13 @@ const newf64 = Value.newF64;
 const to_host_byte_slice = Value.to_host_byte_slice;
 
 pub const FUNCS = [_]c.FuncDef{
-    .{ "get_keyborad_state", getKeyboardState, &.{I32}, &.{I64} },
+    .{ "get_keyboard_state", getKeyboardState, &.{I32}, &.{I64} },
     .{ "is_key_pressed", isKeyPressed, &.{ I64, I64, I32 }, &.{I32} },
     .{ "get_keyboard_modifier_state", getKeyboardModifierState, &.{}, &.{I32} },
     .{ "get_mouse_state", getMouseState, &.{ I32, I32 }, &.{I32} },
 };
 
-// [moonbit]: fn get_keyborad_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyborad_state"
+// [moonbit]: fn get_keyboard_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyboard_state"
 pub fn getKeyboardState(args: []const Value, results: []Value) ?Ptr {
     const states = jok.io.getKeyboardState().states;
     _ = c.writeNumberArg(&args[0], states.len);

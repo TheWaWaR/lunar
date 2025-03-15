@@ -24,11 +24,11 @@ pub enum MouseButton {
   Extra2 = 5;
 }
 
-fn get_keyborad_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyborad_state"
+fn get_keyboard_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyboard_state"
 
-pub fn get_keyborad_state() -> KeyboardState {
+pub fn get_keyboard_state() -> KeyboardState {
   let len_ptr = get_global_buf_ptr()
-  let ptr = get_keyborad_state_ffi(len_ptr)
+  let ptr = get_keyboard_state_ffi(len_ptr)
   let len = load64_u(len_ptr)
   {slice: {ptr: ptr, len: len}}
 }
