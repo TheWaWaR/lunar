@@ -1,3 +1,6 @@
+const std = @import("std");
+const assert = std.debug.assert;
+
 pub const Ptr = *anyopaque;
 pub const ConstPtr = *const anyopaque;
 pub const TrapPtr = *?Ptr;
@@ -153,16 +156,31 @@ pub const Value = extern struct {
     pub fn newF64(value: f32) Value {
         return Value{ .kind = .f64, .of = .{ .f64 = value } };
     }
-
-    pub fn to_u32(self: *const Value) u32 {
-        return @intCast(self.of.i32);
+    pub fn newPtr(ptr: *anyopaque) Value {
+        return newI64(@intCast(@intFromPtr(ptr)));
     }
-    pub fn to_u64(self: *const Value) u64 {
-        return @intCast(self.of.i64);
+
+    pub fn to_number(self: *const Value, comptime T: type) T {
+        const size = @sizeOf(T);
+        const info = @typeInfo(T);
+        comptime assert(size <= 8);
+        if (size <= 4) {
+            if (info == .int) {
+                return @intCast(self.of.i32);
+            } else {
+                return @intCast(self.of.f32);
+            }
+        } else {
+            if (info == .int) {
+                return @intCast(self.of.i64);
+            } else {
+                return @intCast(self.of.f64);
+            }
+        }
     }
 
     pub fn to_guest_ptr(self: *const Value) usize {
-        return @intCast(self.of.i32);
+        return self.to_number(usize);
     }
     pub fn to_host_ptr(val: *const Value) *anyopaque {
         const ptr_int: usize = @intCast(val.of.i64);

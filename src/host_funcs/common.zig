@@ -7,6 +7,13 @@ const Allocator = std.mem.Allocator;
 const Value = w.Value;
 const Sprite = jok.j2d.Sprite;
 
+pub const FuncDef = struct {
+    []const u8,
+    w.HostFn,
+    []const w.WasmValKind,
+    []const w.WasmValKind,
+};
+
 pub fn readFromUtf16StrWithApp(args: []const Value) ?[]u8 {
     const app = get_app();
     const mem_data = app.guest_mem_data();

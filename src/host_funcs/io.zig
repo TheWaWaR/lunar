@@ -7,11 +7,23 @@ const get_app = @import("../main.zig").get_app;
 const Value = w.Value;
 const Ptr = w.Ptr;
 
+const I32 = w.WasmValKind.i32;
+const I64 = w.WasmValKind.i64;
+const F32 = w.WasmValKind.f32;
+const F64 = w.WasmValKind.f64;
+
 const newi32 = Value.newI32;
 const newi64 = Value.newI64;
 const newf32 = Value.newF32;
 const newf64 = Value.newF64;
 const to_host_byte_slice = Value.to_host_byte_slice;
+
+pub const FUNCS = [_]c.FuncDef{
+    .{ "get_keyborad_state", getKeyboardState, &.{I32}, &.{I64} },
+    .{ "is_key_pressed", isKeyPressed, &.{ I64, I64, I32 }, &.{I32} },
+    .{ "get_keyboard_modifier_state", getKeyboardModifierState, &.{}, &.{I32} },
+    .{ "get_mouse_state", getMouseState, &.{ I32, I32 }, &.{I32} },
+};
 
 // [moonbit]: fn get_keyborad_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyborad_state"
 pub fn getKeyboardState(args: []const Value, results: []Value) ?Ptr {

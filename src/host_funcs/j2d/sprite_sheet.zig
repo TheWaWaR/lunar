@@ -9,11 +9,22 @@ const Value = w.Value;
 const Ptr = w.Ptr;
 const Sprite = j2d.Sprite;
 
+const I32 = w.WasmValKind.i32;
+const I64 = w.WasmValKind.i64;
+const F32 = w.WasmValKind.f32;
+const F64 = w.WasmValKind.f64;
+
 const newi32 = Value.newI32;
 const newi64 = Value.newI64;
 const newf32 = Value.newF32;
 const newf64 = Value.newF64;
 const to_host_byte_slice = Value.to_host_byte_slice;
+
+pub const FUNCS = [_]c.FuncDef{
+    .{ "sprite_sheet_from_pictures_in_dir", fromPicturesInDir, &.{ I32, I32, I32, I32 }, &.{I64} },
+    .{ "get_sprite_by_name", getSpriteByName, &.{ I64, I32, I32, I32 }, &.{I32} },
+};
+
 // [moonbit]
 // fn sprite_sheet_from_pictures_in_dir_ffi(
 //   dir_ptr: Int, dir_len: Int,
@@ -23,8 +34,8 @@ pub fn fromPicturesInDir(args: []const Value, results: []Value) ?Ptr {
     var sheet_ptr: i64 = 0;
     defer results[0] = newi64(sheet_ptr);
     const dir = c.readFromUtf16StrWithApp(args[0..2]) orelse return null;
-    const width: u32 = args[2].to_u32();
-    const height: u32 = args[3].to_u32();
+    const width = args[2].to_number(u32);
+    const height = args[3].to_number(u32);
     const app = get_app();
     const sheet = j2d.SpriteSheet.fromPicturesInDir(app.ctx, @ptrCast(dir), width, height, .{}) catch |err| {
         std.log.err(
