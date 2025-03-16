@@ -51,7 +51,7 @@ pub fn fromPicturesInDir(args: []const Value, results: []Value) ?Ptr {
 // fn get_sprite_by_name_ffi(
 //   sheet_ptr: UInt64,
 //   name_ptr: Int, name_len: Int,
-//   sp_bytes_ptr: Int,
+//   sp_ptr: Int,
 // ) -> Bool = "lunar" "get_sprite_by_name"
 pub fn getSpriteByName(args: []const Value, results: []Value) ?Ptr {
     var success: bool = false;
