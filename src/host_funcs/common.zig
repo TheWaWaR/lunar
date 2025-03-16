@@ -245,3 +245,7 @@ pub fn readSpriteOption(_guest_ptr: usize) SpriteOption {
     }
     return opt;
 }
+
+pub fn writeBoolArg(arg: *const Value, val: bool) void {
+    get_app().guest_mem_data()[arg.toGuestPtr()] = @intFromBool(val);
+}

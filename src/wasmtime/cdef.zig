@@ -171,6 +171,10 @@ pub const Value = extern struct {
         }
     }
 
+    pub fn toBool(self: *const Value) bool {
+        return self.toNumber(i32) > 0;
+    }
+
     pub fn toGuestPtr(self: *const Value) usize {
         return @intCast(self.toNumber(u32));
     }
