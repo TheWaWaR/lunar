@@ -21,7 +21,7 @@ pub const FUNCS = [_]c.FuncDef{
 };
 
 // [moonbit]
-// fn physfs_mount(
+// fn physfs_mount_ffi(
 //   dir_ptr: Int, dir_len: Int,
 //   mount_point_ptr: Int, mount_point_len: Int,
 //   append: Bool,

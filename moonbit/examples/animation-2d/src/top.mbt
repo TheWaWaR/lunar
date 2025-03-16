@@ -2,6 +2,9 @@ pub fn lunar_init() -> Unit {
   @lunar.log("> moon.init")
   let size = @lunar.get_canvas_size()
   @lunar.log("size: \{size}")
+  if @lunar.physfs_mount("zig-out/assets", "", false) {
+    @lunar.log("mount to zig-out/assets success")
+  }
 }
 
 pub fn lunar_event(_: UInt) -> Unit { }

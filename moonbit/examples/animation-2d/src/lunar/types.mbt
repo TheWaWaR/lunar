@@ -77,3 +77,6 @@ pub fn Color::cyan() -> Color { Color::rgb(0x00, 0xFF, 0xFF) }
 pub fn Color::yellow() -> Color { Color::rgb(0xFF, 0xFF, 0x00) }
 pub fn Color::purple() -> Color { Color::rgb(255, 128, 255) }
 
+pub struct Renderer {
+  inner: UInt64
+}

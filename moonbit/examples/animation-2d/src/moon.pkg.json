@@ -1,4 +1,7 @@
 {
+  "targets": {
+    "top.mbt": ["wasm"]
+  },
   "import": [
     "lunar/lunar"
   ],
