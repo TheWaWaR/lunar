@@ -24,7 +24,7 @@ const newf64 = Value.newF64;
 pub const FUNCS = [_]c.FuncDef{
     .{ "animation_system_create", create, &.{ I32, I32 }, &.{I64} },
     .{ "connect_signal", connectSignal, &.{I64}, &.{I32} },
-    .{ "add_simple_animation", addSimple, &.{ I64, I32, I32, I32, I32, I32 }, &.{I32} },
+    .{ "add_simple_animation", addSimple, &.{ I64, I32, I32, I32, I32, F32 }, &.{I32} },
     .{ "animation_system_is_over", isOver, &.{ I64, I32, I32, I32 }, &.{I32} },
     .{ "animation_system_is_stopped", isStopped, &.{ I64, I32, I32, I32 }, &.{I32} },
     .{ "animation_system_reset", reset, &.{ I64, I32, I32 }, &.{I32} },

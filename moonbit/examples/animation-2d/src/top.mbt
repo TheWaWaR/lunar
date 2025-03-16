@@ -9,7 +9,7 @@ let anim_sys : Ref[@lunar.AnimationSystem] = {
 ///|
 pub fn lunar_init() -> Unit {
   @lunar.log("> moon.init")
-  if @lunar.physfs_mount("zig-out/assets", "", false) {
+  if @lunar.physfs_mount("zig-out/assets", "", true) {
     @lunar.log("mount to zig-out/assets success")
   }
   let size = @lunar.get_canvas_size()
@@ -76,7 +76,7 @@ pub fn lunar_update() -> Unit {
 pub fn lunar_draw() -> Unit {
   @lunar.debug_print(
     "Press W/S/A/D to move character around",
-    pos=@lunar.Point::new(300.0, 0.0),
+    pos=@lunar.Point::new(200.0, 0.0),
     color=@lunar.Color::blue(),
   )
 }
