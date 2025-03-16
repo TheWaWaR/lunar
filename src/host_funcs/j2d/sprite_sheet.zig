@@ -59,7 +59,7 @@ pub fn getSpriteByName(args: []const Value, results: []Value) ?Ptr {
     const sheet = args[0].to_host_ptr(j2d.SpriteSheet);
     const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
     const sp = sheet.getSpriteByName(name) orelse return null;
-    c.writeSprite(&args[3], sp);
+    c.writeSpriteArg(args[3], sp);
     success = true;
     return null;
 }

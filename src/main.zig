@@ -16,6 +16,8 @@ const MAX_WASM_SIZE: usize = 256 * 1024 * 1024;
 
 const AppData = struct {
     ctx: jok.Context = undefined,
+    renderer: jok.Renderer = undefined,
+
     engine: w.Engine = undefined,
     memory: w.Memory = undefined,
     store: w.Store = undefined,
@@ -34,6 +36,9 @@ const AppData = struct {
     pub fn guest_mem_data(self: *Self) [*]u8 {
         return self.memory.data(self.context);
     }
+    pub fn get_renderer(self: *Self) *jok.Renderer {
+        return &self.renderer;
+    }
 };
 
 var app: AppData = .{};
@@ -46,6 +51,7 @@ var max_call_update_us: i64 = 0;
 
 pub fn init(ctx: jok.Context) !void {
     app.ctx = ctx;
+    app.renderer = ctx.renderer();
     app.bytes_buffer = try std.ArrayList(u8).initCapacity(ctx.allocator(), 2048);
 
     const args = try std.process.argsAlloc(ctx.allocator());

@@ -12,12 +12,25 @@ pub struct Point {
 pub fn Point::new(x: Float, y: Float) -> Point {
   { x, y }
 }
+pub fn Point::writeTo(self: Point, ptr: Int) -> Int {
+  storef32(ptr + 0, self.x)
+  storef32(ptr + 4, self.y)
+  8
+}
 
 pub struct Color {
   r: Byte
   g: Byte
   b: Byte
   a: Byte
+}
+
+pub fn Color::writeTo(self: Color, ptr: Int) -> Int {
+  store8(ptr + 0, self.r.to_int())
+  store8(ptr + 1, self.g.to_int())
+  store8(ptr + 2, self.b.to_int())
+  store8(ptr + 3, self.a.to_int())
+  4
 }
 pub fn Color::rgb(r: Byte, g: Byte, b: Byte) -> Color {
   { r, g, b, a: 255 }

@@ -96,7 +96,7 @@ pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
     defer app.ctx.allocator().free(sp_items);
     const frames: []Frame.Data = app.ctx.allocator().alloc(Frame.Data, sp_count) catch @panic("OOM");
     defer app.ctx.allocator().free(frames);
-    c.readSprites(&args[3], sp_items);
+    c.readSpritesArg(args[3], sp_items);
     for (0..sp_count) |idx| {
         var frame = &frames[idx];
         frame.sp = sp_items[idx];

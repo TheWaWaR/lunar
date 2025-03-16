@@ -21,7 +21,7 @@ pub fn lunar_draw() -> Unit {
   @lunar.debug_print(
     "Press up/down/left/right to move character around", 
     pos= @lunar.Point::new(300.0, 0.0), 
-    color=@lunar.Color::white(),
+    color=@lunar.Color::blue(),
   )
 }
 

@@ -31,12 +31,12 @@ fn init(args: []const Value, _: []Value) ?Ptr {
 }
 
 // [moonbit] fn affine_transform_translate_2d_ffi(
-//   mat_in_ptr: Int, pos_x: f32, pos_y: f32, mat_out_ptr: Int,
+//   mat_in_ptr: Int, pos_ptr: Int, mat_out_ptr: Int,
 // )  = "lunar" "affine_transform_translate_2d"
 fn translate(args: []const Value, _: []Value) ?Ptr {
     const in = j2d.AffineTransform{ .mat = c.readMat(args[0].to_guest_ptr()) };
-    const pos = c.readPoint(args[1..3]);
+    const pos = c.readPointArg(args[1]);
     const out = in.translate(pos);
-    c.writeMat(args[3].to_guest_ptr(), out.mat);
+    c.writeMat(args[2].to_guest_ptr(), out.mat);
     return null;
 }

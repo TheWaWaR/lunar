@@ -82,27 +82,31 @@ pub fn readBytes(args: []const Value) []const u8 {
     return mem_data[ptr .. ptr + len];
 }
 
-pub fn readPoint(args: []const Value) jok.Point {
-    const x: f32 = args[0].of.f32;
-    const y: f32 = args[1].of.f32;
-    return jok.Point{ .x = x, .y = y };
+pub fn readPointArg(arg: Value) jok.Point {
+    var guest_ptr = arg.to_guest_ptr();
+    var p: jok.Point = undefined;
+    guest_ptr += readNumber(f32, guest_ptr, &p.x);
+    guest_ptr += readNumber(f32, guest_ptr, &p.y);
+    return p;
 }
 
-pub fn readColor(args: []const Value) jok.Color {
-    const r: u8 = @intCast(args[0].of.i32);
-    const g: u8 = @intCast(args[1].of.i32);
-    const b: u8 = @intCast(args[2].of.i32);
-    const a: u8 = @intCast(args[3].of.i32);
+pub fn readColorArg(arg: Value) jok.Color {
+    const guest_ptr = arg.to_guest_ptr();
+    const mem_data = get_app().guest_mem_data();
+    const r: u8 = mem_data[guest_ptr + 0];
+    const g: u8 = mem_data[guest_ptr + 1];
+    const b: u8 = mem_data[guest_ptr + 2];
+    const a: u8 = mem_data[guest_ptr + 3];
     return jok.Color.rgba(r, g, b, a);
 }
 
-pub fn readSprite(arg: *const Value) Sprite {
+pub fn readSpriteArg(arg: Value) Sprite {
     var sprites: [1]Sprite = undefined;
-    readSprites(arg, sprites[0..]);
+    readSpritesArg(arg, sprites[0..]);
     return sprites[0];
 }
 
-pub fn readSprites(arg: *const Value, items: []Sprite) void {
+pub fn readSpritesArg(arg: Value, items: []Sprite) void {
     var guest_ptr = arg.to_guest_ptr();
     for (0..items.len) |idx| {
         var item = &items[idx];
@@ -122,7 +126,7 @@ pub fn readSprites(arg: *const Value, items: []Sprite) void {
     }
 }
 
-pub fn writeSprite(arg: *const Value, sp: Sprite) void {
+pub fn writeSpriteArg(arg: Value, sp: Sprite) void {
     var guest_ptr = arg.to_guest_ptr();
     inline for (.{
         sp.width,
@@ -137,7 +141,7 @@ pub fn writeSprite(arg: *const Value, sp: Sprite) void {
     }
 }
 
-pub fn readNumberArg(comptime T: type, arg: *const Value, ptr: *T) usize {
+pub fn readNumberArg(comptime T: type, arg: Value, ptr: *T) usize {
     return readNumber(T, arg.to_guest_ptr(), ptr);
 }
 
@@ -153,7 +157,7 @@ pub fn readNumber(comptime T: type, guest_ptr: usize, ptr: *T) usize {
     return size;
 }
 
-pub fn writeNumberArg(arg: *const Value, val: anytype) usize {
+pub fn writeNumberArg(arg: Value, val: anytype) usize {
     return writeNumber(arg.to_guest_ptr(), val);
 }
 

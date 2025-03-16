@@ -76,7 +76,7 @@ fn batchPopTransform(args: []const Value, _: []Value) ?Ptr {
 fn batchSprite(args: []const Value, results: []Value) ?Ptr {
     results[0] = newi32(0);
     const batch = args[0].to_host_ptr(Batch);
-    const sp = c.readSprite(&args[1]);
+    const sp = c.readSpriteArg(args[1]);
     const opt = c.readSpriteOption(args[2].to_guest_ptr());
     batch.sprite(sp, opt) catch |err| {
         std.log.err("Batch.sprite, error: {}", .{err});

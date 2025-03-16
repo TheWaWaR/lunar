@@ -179,17 +179,17 @@ pub const Value = extern struct {
         }
     }
 
-    pub fn to_guest_ptr(self: *const Value) usize {
+    pub fn to_guest_ptr(self: Self) usize {
         return @intCast(self.to_number(u32));
     }
-    pub fn to_host_ptr(self: *const Value, comptime T: type) *T {
+    pub fn to_host_ptr(self: Self, comptime T: type) *T {
         const ptr_raw: *anyopaque = @ptrFromInt(self.to_number(usize));
         return @alignCast(@ptrCast(ptr_raw));
     }
-    pub fn to_host_byte_ptr(self: *const Value) [*]u8 {
+    pub fn to_host_byte_ptr(self: Self) [*]u8 {
         return @ptrFromInt(self.to_number(usize));
     }
-    pub fn to_host_byte_slice(self: *const Value, val2: *const Value) []u8 {
+    pub fn to_host_byte_slice(self: Self, val2: Value) []u8 {
         const ptr = self.to_host_byte_ptr();
         const len = val2.to_number(usize);
         return ptr[0..len];
