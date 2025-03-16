@@ -6,6 +6,13 @@ pub struct Sprite {
   tex: UInt64
 }
 
+fn sprite_get_sub_sprite_ffi(
+  sp_in_ptr: Int,
+  offset_x: Float, offset_y: Float,
+  width: Float, height: Float,
+  sp_out_ptr: Int,
+) = "lunar" "sprite_get_sub_sprite"
+
 pub fn Sprite::writeTo(self: Sprite, ptr: Int) -> Int {
   let mut size = 0;
   storef32(ptr + size, self.width)
@@ -17,4 +24,23 @@ pub fn Sprite::writeTo(self: Sprite, ptr: Int) -> Int {
   store64_u(ptr + size, self.tex)
   size += 8
   size
+}
+pub fn Sprite::readFrom(ptr: Int) -> Sprite {
+  let mut offset = 0;
+  let width = loadf32(ptr + offset)
+  offset += 4
+  let height = loadf32(ptr + offset)
+  offset += 4
+  let uv0 = Point::readFrom(ptr + offset)
+  offset += 8
+  let uv1 = Point::readFrom(ptr + offset)
+  offset += 8
+  let tex = load64_u(ptr + offset)
+  Sprite::{width, height, uv0, uv1, tex}
+}
+pub fn Sprite::get_sub_sprite(self: Sprite, offset_x: Float, offset_y: Float, width: Float, height: Float) -> Sprite {
+  let ptr = get_global_buf_ptr()
+  let ptr_out = ptr + self.writeTo(ptr)
+  sprite_get_sub_sprite_ffi(ptr, offset_x, offset_y, width, height, ptr_out)
+  Sprite::readFrom(ptr_out)
 }
