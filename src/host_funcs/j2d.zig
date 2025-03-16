@@ -70,6 +70,7 @@ fn batchPopTransform(args: []const Value, _: []Value) ?Ptr {
     batch.popTransform();
     return null;
 }
+
 // [moonbit] fn batch_sprite_2d_ffi(
 //   batch_ptr: UInt64, sp_ptr: Int, opt_ptr: Int,
 // ) -> Bool = "lunar" "batch_sprite_2d"

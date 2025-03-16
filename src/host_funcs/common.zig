@@ -133,8 +133,9 @@ pub fn readSpritesArg(arg: *const Value, items: []Sprite) void {
     }
 }
 
-pub fn writeSpriteArg(arg: *const Value, sp: Sprite) void {
-    var guest_ptr = arg.toGuestPtr();
+pub fn writeSpriteArg(arg: *const Value, sp: Sprite) usize {
+    const guest_ptr = arg.toGuestPtr();
+    var size: usize = 0;
     inline for (.{
         sp.width,
         sp.height,
@@ -144,8 +145,9 @@ pub fn writeSpriteArg(arg: *const Value, sp: Sprite) void {
         sp.uv1.y,
         @intFromPtr(sp.tex.ptr),
     }) |val| {
-        guest_ptr += writeNumber(guest_ptr, val);
+        size += writeNumber(guest_ptr + size, val);
     }
+    return size;
 }
 
 pub fn readNumberArg(comptime T: type, arg: *const Value, ptr: *T) usize {
