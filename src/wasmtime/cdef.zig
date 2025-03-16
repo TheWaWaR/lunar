@@ -160,38 +160,27 @@ pub const Value = extern struct {
         return newI64(@intCast(@intFromPtr(ptr)));
     }
 
-    pub fn to_number(self: *const Value, comptime T: type) T {
+    pub fn toNumber(self: *const Value, comptime T: type) T {
         const size = @sizeOf(T);
-        const info = @typeInfo(T);
+        const is_int = @typeInfo(T) == .int;
         comptime assert(size <= 8);
         if (size <= 4) {
-            if (info == .int) {
-                return @intCast(self.of.i32);
-            } else {
-                return @intCast(self.of.f32);
-            }
+            return if (is_int) @intCast(self.of.i32) else self.of.f32;
         } else {
-            if (info == .int) {
-                return @intCast(self.of.i64);
-            } else {
-                return @intCast(self.of.f64);
-            }
+            return if (is_int) @intCast(self.of.i64) else self.of.f64;
         }
     }
 
-    pub fn to_guest_ptr(self: Self) usize {
-        return @intCast(self.to_number(u32));
+    pub fn toGuestPtr(self: *const Value) usize {
+        return @intCast(self.toNumber(u32));
     }
-    pub fn to_host_ptr(self: Self, comptime T: type) *T {
-        const ptr_raw: *anyopaque = @ptrFromInt(self.to_number(usize));
+    pub fn toHostPtr(self: *const Value, comptime T: type) *T {
+        const ptr_raw: *anyopaque = @ptrFromInt(self.toNumber(usize));
         return @alignCast(@ptrCast(ptr_raw));
     }
-    pub fn to_host_byte_ptr(self: Self) [*]u8 {
-        return @ptrFromInt(self.to_number(usize));
-    }
-    pub fn to_host_byte_slice(self: Self, val2: Value) []u8 {
-        const ptr = self.to_host_byte_ptr();
-        const len = val2.to_number(usize);
+    pub fn toHostBytes(self: *const Value, val2: *const Value) []u8 {
+        const ptr: [*]u8 = @alignCast(@ptrCast(self.toHostPtr(anyopaque)));
+        const len = val2.toNumber(usize);
         return ptr[0..len];
     }
 };

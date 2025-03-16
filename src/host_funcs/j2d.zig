@@ -48,7 +48,7 @@ fn batchNew(_: []const Value, results: []Value) ?Ptr {
 
 // [moonbit] fn batch_submit_2d_ffi(batch_ptr: UInt64)  = "lunar" "batch_submit_2d"
 fn batchSubmit(args: []const Value, _: []Value) ?Ptr {
-    const batch = args[0].to_host_ptr(Batch);
+    const batch = args[0].toHostPtr(Batch);
     batch.submit();
     return null;
 }
@@ -56,7 +56,7 @@ fn batchSubmit(args: []const Value, _: []Value) ?Ptr {
 // [moonbit] fn batch_push_transform_2d_ffi(batch_ptr: UInt64) -> Bool  = "lunar" "batch_push_transform_2d"
 fn batchPushTransform(args: []const Value, results: []Value) ?Ptr {
     results[0] = newi32(0);
-    const batch = args[0].to_host_ptr(Batch);
+    const batch = args[0].toHostPtr(Batch);
     batch.pushTransform() catch |err| {
         std.log.err("Batch.pushTransform error: {}", .{err});
     };
@@ -66,7 +66,7 @@ fn batchPushTransform(args: []const Value, results: []Value) ?Ptr {
 
 // [moonbit] fn batch_pop_transform_2d_ffi(batch_ptr: UInt64)  = "lunar" "batch_pop_transform_2d"
 fn batchPopTransform(args: []const Value, _: []Value) ?Ptr {
-    const batch = args[0].to_host_ptr(Batch);
+    const batch = args[0].toHostPtr(Batch);
     batch.popTransform();
     return null;
 }
@@ -75,9 +75,9 @@ fn batchPopTransform(args: []const Value, _: []Value) ?Ptr {
 // ) -> Bool = "lunar" "batch_sprite_2d"
 fn batchSprite(args: []const Value, results: []Value) ?Ptr {
     results[0] = newi32(0);
-    const batch = args[0].to_host_ptr(Batch);
-    const sp = c.readSpriteArg(args[1]);
-    const opt = c.readSpriteOption(args[2].to_guest_ptr());
+    const batch = args[0].toHostPtr(Batch);
+    const sp = c.readSpriteArg(&args[1]);
+    const opt = c.readSpriteOptionArg(&args[2]);
     batch.sprite(sp, opt) catch |err| {
         std.log.err("Batch.sprite, error: {}", .{err});
         return null;

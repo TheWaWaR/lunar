@@ -44,7 +44,7 @@ pub fn readFromUtf16StrWithApp2(args1: []const Value, args2: []const Value) ?str
 }
 
 pub fn readFromUtf16StrAlloc(args: []const Value) ?[]u8 {
-    const ptr = args[0].to_guest_ptr();
+    const ptr = args[0].toGuestPtr();
     const len: usize = @intCast(args[1].of.i32);
     const app = get_app();
     const mem_data = app.guest_mem_data();
@@ -64,7 +64,7 @@ pub fn readFromUtf16Str(
     mem_data: [*]u8,
     args: []const Value,
 ) ![]u8 {
-    const ptr = args[0].to_guest_ptr();
+    const ptr = args[0].toGuestPtr();
     const len: usize = @intCast(args[1].of.i32);
     try std.unicode.utf16LeToUtf8ArrayList(
         buf,
@@ -76,22 +76,29 @@ pub fn readFromUtf16Str(
 }
 
 pub fn readBytes(args: []const Value) []const u8 {
-    const ptr = args[0].to_guest_ptr();
+    const ptr = args[0].toGuestPtr();
     const len: usize = @intCast(args[1].of.i32);
     const mem_data = get_app().guest_mem_data();
     return mem_data[ptr .. ptr + len];
 }
 
-pub fn readPointArg(arg: Value) jok.Point {
-    var guest_ptr = arg.to_guest_ptr();
+pub fn readPointArg(arg: *const Value) jok.Point {
+    var guest_ptr = arg.toGuestPtr();
     var p: jok.Point = undefined;
     guest_ptr += readNumber(f32, guest_ptr, &p.x);
     guest_ptr += readNumber(f32, guest_ptr, &p.y);
     return p;
 }
 
-pub fn readColorArg(arg: Value) jok.Color {
-    const guest_ptr = arg.to_guest_ptr();
+pub fn writePointArg(arg: *const Value, point: jok.Point) usize {
+    const guest_ptr = arg.toGuestPtr();
+    _ = writeNumber(guest_ptr + 0, point.x);
+    _ = writeNumber(guest_ptr + 4, point.y);
+    return 8;
+}
+
+pub fn readColorArg(arg: *const Value) jok.Color {
+    const guest_ptr = arg.toGuestPtr();
     const mem_data = get_app().guest_mem_data();
     const r: u8 = mem_data[guest_ptr + 0];
     const g: u8 = mem_data[guest_ptr + 1];
@@ -100,14 +107,14 @@ pub fn readColorArg(arg: Value) jok.Color {
     return jok.Color.rgba(r, g, b, a);
 }
 
-pub fn readSpriteArg(arg: Value) Sprite {
+pub fn readSpriteArg(arg: *const Value) Sprite {
     var sprites: [1]Sprite = undefined;
     readSpritesArg(arg, sprites[0..]);
     return sprites[0];
 }
 
-pub fn readSpritesArg(arg: Value, items: []Sprite) void {
-    var guest_ptr = arg.to_guest_ptr();
+pub fn readSpritesArg(arg: *const Value, items: []Sprite) void {
+    var guest_ptr = arg.toGuestPtr();
     for (0..items.len) |idx| {
         var item = &items[idx];
         inline for (.{
@@ -126,8 +133,8 @@ pub fn readSpritesArg(arg: Value, items: []Sprite) void {
     }
 }
 
-pub fn writeSpriteArg(arg: Value, sp: Sprite) void {
-    var guest_ptr = arg.to_guest_ptr();
+pub fn writeSpriteArg(arg: *const Value, sp: Sprite) void {
+    var guest_ptr = arg.toGuestPtr();
     inline for (.{
         sp.width,
         sp.height,
@@ -141,8 +148,8 @@ pub fn writeSpriteArg(arg: Value, sp: Sprite) void {
     }
 }
 
-pub fn readNumberArg(comptime T: type, arg: Value, ptr: *T) usize {
-    return readNumber(T, arg.to_guest_ptr(), ptr);
+pub fn readNumberArg(comptime T: type, arg: *const Value, ptr: *T) usize {
+    return readNumber(T, arg.toGuestPtr(), ptr);
 }
 
 pub fn readNumber(comptime T: type, guest_ptr: usize, ptr: *T) usize {
@@ -157,8 +164,8 @@ pub fn readNumber(comptime T: type, guest_ptr: usize, ptr: *T) usize {
     return size;
 }
 
-pub fn writeNumberArg(arg: Value, val: anytype) usize {
-    return writeNumber(arg.to_guest_ptr(), val);
+pub fn writeNumberArg(arg: *const Value, val: anytype) usize {
+    return writeNumber(arg.toGuestPtr(), val);
 }
 
 pub fn writeNumber(guest_ptr: usize, val: anytype) usize {
@@ -190,6 +197,10 @@ pub fn readMat(_guest_ptr: usize) Mat {
         mat[mat_idx] = arr;
     }
     return mat;
+}
+
+pub fn readSpriteOptionArg(arg: *const Value) SpriteOption {
+    return readSpriteOption(arg.toGuestPtr());
 }
 
 pub fn readSpriteOption(_guest_ptr: usize) SpriteOption {

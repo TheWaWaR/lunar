@@ -56,8 +56,7 @@ fn animation_system_signal(animation_name: []const u8) void {
 // [moonbit]
 // fn connect_signal_ffi(as_ptr: UInt64) -> Bool = "lunar" "connect_signal"
 pub fn connectSignal(args: []const Value, results: []Value) ?Ptr {
-    var success: bool = false;
-    defer results[0] = newi32(@intFromBool(success));
+    results[0] = newi32(0);
     const as: *j2d.AnimationSystem = @ptrFromInt(@as(usize, @intCast(args[0].of.i64)));
     const app = get_app();
     var it = app.as_map_2d.iterator();
@@ -73,7 +72,7 @@ pub fn connectSignal(args: []const Value, results: []Value) ?Ptr {
     }
     // FIXME: name actually unused
     as.sig.connect(animation_system_signal) catch @panic("OOM");
-    success = true;
+    results[0] = newi32(1);
     return null;
 }
 
@@ -88,20 +87,20 @@ pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
     var success: bool = false;
     defer results[0] = newi32(@intFromBool(success));
 
-    const as = args[0].to_host_ptr(j2d.AnimationSystem);
+    const as = args[0].toHostPtr(j2d.AnimationSystem);
     const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
-    const sp_count: usize = @intCast(args[4].of.i32);
+    const sp_count = args[4].toNumber(usize);
     const app = get_app();
     const sp_items: []Sprite = app.ctx.allocator().alloc(Sprite, sp_count) catch @panic("OOM");
     defer app.ctx.allocator().free(sp_items);
     const frames: []Frame.Data = app.ctx.allocator().alloc(Frame.Data, sp_count) catch @panic("OOM");
     defer app.ctx.allocator().free(frames);
-    c.readSpritesArg(args[3], sp_items);
+    c.readSpritesArg(&args[3], sp_items);
     for (0..sp_count) |idx| {
         var frame = &frames[idx];
         frame.sp = sp_items[idx];
     }
-    const fps: f32 = @bitCast(args[5].of.i32);
+    const fps = args[5].toNumber(f32);
     as.addSimple(name, frames, fps, .{}) catch |err| {
         std.log.err("AnimationSystem.addSimple({s}) error: {}", .{ name, err });
         return null;

@@ -32,8 +32,8 @@ pub const FUNCS = [_]c.FuncDef{
 // ) = "lunar" "debug_print"
 pub fn debugPrint(args: []const Value, _: []Value) ?Ptr {
     const text = c.readFromUtf16StrWithApp(args[0..2]) orelse return null;
-    const pos = c.readPointArg(args[2]);
-    const color = c.readColorArg(args[3]);
+    const pos = c.readPointArg(&args[2]);
+    const color = c.readColorArg(&args[3]);
     get_app().ctx.debugPrint(text, .{ .pos = pos, .color = color });
     return null;
 }
@@ -41,8 +41,8 @@ pub fn debugPrint(args: []const Value, _: []Value) ?Ptr {
 // [moonbit] fn get_canvas_size(width_ptr: Int, height_ptr: Int) = "lunar" "get_canvas_size"
 pub fn getCanvasSize(args: []const Value, _: []Value) ?Ptr {
     const size = get_app().ctx.getCanvasSize();
-    _ = c.writeNumberArg(args[0], size.width);
-    _ = c.writeNumberArg(args[1], size.height);
+    _ = c.writeNumberArg(&args[0], size.width);
+    _ = c.writeNumberArg(&args[1], size.height);
     return null;
 }
 

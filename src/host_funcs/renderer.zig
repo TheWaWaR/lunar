@@ -1,4 +1,3 @@
-
 const std = @import("std");
 const jok = @import("jok");
 const w = @import("../wasmtime.zig");
@@ -20,13 +19,17 @@ const newf32 = Value.newF32;
 const newf64 = Value.newF64;
 const newptr = Value.newPtr;
 
-pub const FUNCS = [_]c.FuncDef{
-
-};
+pub const FUNCS = [_]c.FuncDef{};
 
 // fn renderer_clear_ffi(renderer_ptr: UInt64, color_ptr: Int) -> Bool = "lunar" "renderer_clear"
-fn clear(args: []const Value, _: []Value) ?Ptr {
-    _ = args[0].to_host_ptr(Renderer);
-    _ = c.readColorArg(args[1]);
+fn clear(args: []const Value, results: []Value) ?Ptr {
+    results[0] = newi32(0);
+    const renderer = args[0].toHostPtr(Renderer);
+    const color = c.readColorArg(args[1]);
+    renderer.*.clear(color) catch |err| {
+        std.log.err("renderer.clear() error: {}", .{err});
+        return null;
+    };
+    results[0] = newi32(1);
     return null;
 }

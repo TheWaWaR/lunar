@@ -21,21 +21,21 @@ pub const FUNCS = [_]c.FuncDef{
     .{ "get_keyboard_state", getKeyboardState, &.{I32}, &.{I64} },
     .{ "is_key_pressed", isKeyPressed, &.{ I64, I64, I32 }, &.{I32} },
     .{ "get_keyboard_modifier_state", getKeyboardModifierState, &.{}, &.{I32} },
-    .{ "get_mouse_state", getMouseState, &.{ I32, I32 }, &.{I32} },
+    .{ "get_mouse_state", getMouseState, &.{I32}, &.{I32} },
 };
 
 // [moonbit]: fn get_keyboard_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyboard_state"
 pub fn getKeyboardState(args: []const Value, results: []Value) ?Ptr {
     const states = jok.io.getKeyboardState().states;
-    _ = c.writeNumberArg(args[0], states.len);
+    _ = c.writeNumberArg(&args[0], states.len);
     results[0] = newi64(@intCast(@intFromPtr(states.ptr)));
     return null;
 }
 
 // [moonbit] fn is_key_pressed_ffi(states_ptr: UInt64, states_len: UInt64, scancode: Int) -> Bool = "lunar" "is_key_pressed"
 pub fn isKeyPressed(args: []const Value, results: []Value) ?Ptr {
-    const states = args[0].to_host_byte_slice(args[1]);
-    const scancode = args[2].to_number(c_uint);
+    const states = args[0].toHostBytes(&args[1]);
+    const scancode = args[2].toNumber(c_uint);
 
     const kbd = jok.io.KeyboardState{ .states = states };
     const is_pressed = kbd.isPressed(@enumFromInt(scancode));
@@ -49,11 +49,10 @@ pub fn getKeyboardModifierState(_: []const Value, results: []Value) ?Ptr {
     return null;
 }
 
-// [moonbit] fn get_mouse_state_ffi(pos_x_ptr: Int, pos_y_ptr: Int) -> Byte = "lunar" "get_mouse_state"
+// [moonbit] fn get_mouse_state_ffi(pos_ptr: Int) -> Byte = "lunar" "get_mouse_state"
 pub fn getMouseState(args: []const Value, results: []Value) ?Ptr {
     const state = jok.io.getMouseState();
-    _ = c.writeNumberArg(args[0], state.pos.x);
-    _ = c.writeNumberArg(args[1], state.pos.y);
+    _ = c.writePointArg(&args[0], state.pos);
     results[0] = newi32(@intCast(state.buttons.storage));
     return null;
 }

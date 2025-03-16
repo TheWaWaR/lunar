@@ -33,8 +33,8 @@ pub fn fromPicturesInDir(args: []const Value, results: []Value) ?Ptr {
     var sheet_ptr: i64 = 0;
     defer results[0] = newi64(sheet_ptr);
     const dir = c.readFromUtf16StrWithApp(args[0..2]) orelse return null;
-    const width = args[2].to_number(u32);
-    const height = args[3].to_number(u32);
+    const width = args[2].toNumber(u32);
+    const height = args[3].toNumber(u32);
     const app = get_app();
     const sheet = j2d.SpriteSheet.fromPicturesInDir(app.ctx, @ptrCast(dir), width, height, .{}) catch |err| {
         std.log.err(
@@ -56,10 +56,10 @@ pub fn fromPicturesInDir(args: []const Value, results: []Value) ?Ptr {
 pub fn getSpriteByName(args: []const Value, results: []Value) ?Ptr {
     var success: bool = false;
     defer results[0] = newi32(@intFromBool(success));
-    const sheet = args[0].to_host_ptr(j2d.SpriteSheet);
+    const sheet = args[0].toHostPtr(j2d.SpriteSheet);
     const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
     const sp = sheet.getSpriteByName(name) orelse return null;
-    c.writeSpriteArg(args[3], sp);
+    c.writeSpriteArg(&args[3], sp);
     success = true;
     return null;
 }
