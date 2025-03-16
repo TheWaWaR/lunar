@@ -35,13 +35,11 @@ pub fn get_keyboard_state() -> KeyboardState {
 
 fn get_keyboard_modifier_state() -> KeyModifierSet = "lunar" "get_keyboard_modifier_state"
 
-fn get_mouse_state_ffi(pos_x_ptr: Int, pos_y_ptr: Int) -> Byte = "lunar" "get_mouse_state"
+fn get_mouse_state_ffi(pos_ptr: Int) -> Byte = "lunar" "get_mouse_state"
 
 pub fn get_mouse_state() -> MouseState {
-  let pos_x_ptr = get_global_buf_ptr()
-  let pos_y_ptr = pos_x_ptr + 4
-  let buttons = get_mouse_state_ffi(pos_x_ptr, pos_y_ptr)
-  let x = loadf32(pos_x_ptr)
-  let y = loadf32(pos_y_ptr)
-  {buttons, pos: {x, y}}
+  let pos_ptr = get_global_buf_ptr()
+  let buttons = get_mouse_state_ffi(pos_ptr)
+  let pos = Point::readFrom(pos_ptr)
+  {buttons, pos}
 }

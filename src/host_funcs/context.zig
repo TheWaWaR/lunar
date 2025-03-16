@@ -20,6 +20,7 @@ const newptr = Value.newPtr;
 
 pub const FUNCS = [_]c.FuncDef{
     .{ "debug_print", debugPrint, &.{ I32, I32, I32, I32 }, &.{} },
+    .{ "kill", kill, &.{}, &.{} },
     .{ "delta_seconds", deltaSeconds, &.{}, &.{F32} },
     .{ "get_canvas_size", getCanvasSize, &.{ I32, I32 }, &.{} },
     .{ "get_renderer", getRenderer, &.{}, &.{I64} },
@@ -30,7 +31,7 @@ pub const FUNCS = [_]c.FuncDef{
 //   text_ptr: Int, text_len: Int,
 //   pos_ptr: Int, color_ptr: Int,
 // ) = "lunar" "debug_print"
-pub fn debugPrint(args: []const Value, _: []Value) ?Ptr {
+fn debugPrint(args: []const Value, _: []Value) ?Ptr {
     const text = c.readFromUtf16StrWithApp(args[0..2]) orelse return null;
     const pos = c.readPointArg(&args[2]);
     const color = c.readColorArg(&args[3]);
@@ -38,17 +39,22 @@ pub fn debugPrint(args: []const Value, _: []Value) ?Ptr {
     return null;
 }
 
-// [moonbit] fn get_canvas_size(width_ptr: Int, height_ptr: Int) = "lunar" "get_canvas_size"
-pub fn getCanvasSize(args: []const Value, _: []Value) ?Ptr {
-    const size = get_app().ctx.getCanvasSize();
-    _ = c.writeNumberArg(&args[0], size.width);
-    _ = c.writeNumberArg(&args[1], size.height);
+fn kill(_: []const Value, _: []Value) ?Ptr {
+    get_app().ctx.kill();
     return null;
 }
 
 // [moonbit] fn delta_seconds_ffi() -> Float = "lunar" "delta_seconds"
-pub fn deltaSeconds(_: []const Value, results: []Value) ?Ptr {
+fn deltaSeconds(_: []const Value, results: []Value) ?Ptr {
     results[0] = newf32(get_app().ctx.deltaSeconds());
+    return null;
+}
+
+// [moonbit] fn get_canvas_size(width_ptr: Int, height_ptr: Int) = "lunar" "get_canvas_size"
+fn getCanvasSize(args: []const Value, _: []Value) ?Ptr {
+    const size = get_app().ctx.getCanvasSize();
+    _ = c.writeNumberArg(&args[0], size.width);
+    _ = c.writeNumberArg(&args[1], size.height);
     return null;
 }
 

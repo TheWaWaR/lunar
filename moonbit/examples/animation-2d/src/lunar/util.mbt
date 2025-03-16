@@ -8,7 +8,7 @@ pub fn log(content: String) -> Unit {
   }
 }
 
-let global_buf: FixedArray[Byte] = FixedArray::make(512, b'\x00')
+let global_buf: FixedArray[Byte] = FixedArray::make(2048, b'\x00')
 
 pub fn get_global_buf_ptr() -> Int {
   byte_array2ptr(global_buf)

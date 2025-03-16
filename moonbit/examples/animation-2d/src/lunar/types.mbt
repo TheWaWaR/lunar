@@ -7,14 +7,36 @@ pub struct ZigSlice {
 pub struct Point {
   x: Float
   y: Float
-}
-
+} derive (Show)
 pub fn Point::new(x: Float, y: Float) -> Point {
   { x, y }
+}
+pub fn Point::readFrom(ptr: Int) -> Point {
+  let x = loadf32(ptr + 0)
+  let y = loadf32(ptr + 4)
+  Point::new(x, y)
 }
 pub fn Point::writeTo(self: Point, ptr: Int) -> Int {
   storef32(ptr + 0, self.x)
   storef32(ptr + 4, self.y)
+  8
+}
+
+pub struct Size {
+  width: UInt
+  height: UInt
+} derive (Show)
+pub fn Size::new(width: UInt, height: UInt) -> Size {
+  {width, height }
+}
+pub fn Size::readFrom(ptr: Int) -> Size {
+  let width = load32_u(ptr + 0)
+  let height = load32_u(ptr + 4)
+  Size::new(width, height)
+}
+pub fn Size::writeTo(self: Size, ptr: Int) -> Int {
+  store32_u(ptr + 0, self.width)
+  store32_u(ptr + 4, self.height)
   8
 }
 
@@ -23,8 +45,14 @@ pub struct Color {
   g: Byte
   b: Byte
   a: Byte
+} derive (Show)
+pub fn Color::readFrom(ptr: Int) -> Color {
+  let r = load8_u(ptr + 0).to_byte()
+  let g = load8_u(ptr + 1).to_byte()
+  let b = load8_u(ptr + 2).to_byte()
+  let a = load8_u(ptr + 3).to_byte()
+  Color::rgba(r, g, b, a)
 }
-
 pub fn Color::writeTo(self: Color, ptr: Int) -> Int {
   store8(ptr + 0, self.r.to_int())
   store8(ptr + 1, self.g.to_int())

@@ -1,12 +1,17 @@
 pub fn lunar_init() -> Unit {
   @lunar.log("> moon.init")
+  let size = @lunar.get_canvas_size()
+  @lunar.log("size: \{size}")
 }
 
 pub fn lunar_event(_: UInt) -> Unit { }
 
 pub fn lunar_update() -> Unit { 
   let kbd = @lunar.get_keyboard_state()
-  if kbd.is_pressed(@lunar.SDL_SCANCODE_A) {
+  if kbd.is_pressed(@lunar.SDL_SCANCODE_Q) {
+    @lunar.log("Quit game")
+    @lunar.kill()
+  } else if kbd.is_pressed(@lunar.SDL_SCANCODE_A) {
     @lunar.log("pressed: A")
   } else if kbd.is_pressed(@lunar.SDL_SCANCODE_S) {
     @lunar.log("pressed: S")
@@ -19,7 +24,7 @@ pub fn lunar_update() -> Unit {
 
 pub fn lunar_draw() -> Unit {
   @lunar.debug_print(
-    "Press up/down/left/right to move character around", 
+    "Press W/S/A/D to move character around", 
     pos= @lunar.Point::new(300.0, 0.0), 
     color=@lunar.Color::blue(),
   )
