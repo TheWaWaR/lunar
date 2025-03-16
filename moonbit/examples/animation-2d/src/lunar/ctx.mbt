@@ -20,6 +20,7 @@ pub fn debug_print(
 }
 
 pub fn kill() = "lunar" "kill"
+pub fn delta_seconds() -> Float = "lunar" "delta_seconds"
 
 fn get_canvas_size_ffi(width_ptr: Int, height_ptr: Int) = "lunar" "get_canvas_size"
 
@@ -31,3 +32,19 @@ pub fn get_canvas_size() -> Size  {
   Size::new(width, height)
 }
 
+pub struct Renderer {
+  inner: UInt64
+}
+
+fn get_renderer_ffi() -> UInt64 = "lunar" "get_renderer"
+fn renderer_clear_ffi(ptr: UInt64, color_ptr: Int) -> Bool = "lunar" "renderer_clear"
+
+pub fn get_renderer() -> Renderer {
+  { inner: get_renderer_ffi() }
+}
+
+pub fn Renderer::clear(self: Renderer, color: Color) -> Unit {
+  let ptr = get_global_buf_ptr()
+  let _len = color.writeTo(ptr)
+  let _success = renderer_clear_ffi(self.inner, ptr)
+}

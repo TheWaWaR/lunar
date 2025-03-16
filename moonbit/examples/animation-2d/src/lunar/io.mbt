@@ -9,7 +9,9 @@ pub fn is_pressed(self: KeyboardState, scancode: Int) -> Bool {
   is_key_pressed_ffi(self.slice.ptr, self.slice.len, scancode)
 }
 
-pub typealias KeyModifierSet = UInt16;
+pub struct KeyModifierSet {
+  inner: UInt16
+}
 
 pub struct MouseState {
   buttons: Byte
@@ -33,7 +35,11 @@ pub fn get_keyboard_state() -> KeyboardState {
   {slice: {ptr: ptr, len: len}}
 }
 
-fn get_keyboard_modifier_state() -> KeyModifierSet = "lunar" "get_keyboard_modifier_state"
+fn get_keyboard_modifier_state_ffi() -> UInt16 = "lunar" "get_keyboard_modifier_state"
+
+pub fn get_keyboard_modifier_state() -> KeyModifierSet {
+  { inner: get_keyboard_modifier_state_ffi() }
+}
 
 fn get_mouse_state_ffi(pos_ptr: Int) -> Byte = "lunar" "get_mouse_state"
 
