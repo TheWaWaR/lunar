@@ -16,7 +16,6 @@ const newi32 = Value.newI32;
 const newi64 = Value.newI64;
 const newf32 = Value.newF32;
 const newf64 = Value.newF64;
-const to_host_byte_slice = Value.to_host_byte_slice;
 
 pub const FUNCS = [_]c.FuncDef{
     .{ "debug_print", debugPrint, &.{ I32, I32, F32, F32, I32, I32, I32, I32 }, &.{} },

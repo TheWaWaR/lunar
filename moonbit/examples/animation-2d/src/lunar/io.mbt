@@ -33,11 +33,7 @@ pub fn get_keyboard_state() -> KeyboardState {
   {slice: {ptr: ptr, len: len}}
 }
 
-fn get_keyboard_modifier_state_ffi() -> UInt16 = "lunar" "get_keyboard_modifier_state"
-
-pub fn get_keyboard_modifier_state() -> KeyModifierSet {
-  get_keyboard_modifier_state_ffi()
-}
+fn get_keyboard_modifier_state() -> KeyModifierSet = "lunar" "get_keyboard_modifier_state"
 
 fn get_mouse_state_ffi(pos_x_ptr: Int, pos_y_ptr: Int) -> Byte = "lunar" "get_mouse_state"
 

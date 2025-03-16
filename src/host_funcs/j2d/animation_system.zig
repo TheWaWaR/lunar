@@ -19,7 +19,6 @@ const newi32 = Value.newI32;
 const newi64 = Value.newI64;
 const newf32 = Value.newF32;
 const newf64 = Value.newF64;
-const to_host_byte_slice = Value.to_host_byte_slice;
 
 pub const FUNCS = [_]c.FuncDef{
     .{ "create_animation_system", create, &.{ I32, I32 }, &.{I64} },
@@ -89,7 +88,7 @@ pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
     var success: bool = false;
     defer results[0] = newi32(@intFromBool(success));
 
-    const as: *j2d.AnimationSystem = @alignCast(@ptrCast(args[0].to_host_ptr()));
+    const as = args[0].to_host_ptr(j2d.AnimationSystem);
     const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
     const sp_count: usize = @intCast(args[4].of.i32);
     const app = get_app();

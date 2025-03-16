@@ -7,6 +7,8 @@ const assert = std.debug.assert;
 const Allocator = std.mem.Allocator;
 const Value = w.Value;
 const Sprite = jok.j2d.Sprite;
+const SpriteOption = jok.j2d.Batch.SpriteOption;
+const Mat = jok.zmath.Mat;
 
 pub const FuncDef = struct {
     []const u8,
@@ -94,6 +96,12 @@ pub fn readColor(args: []const Value) jok.Color {
     return jok.Color.rgba(r, g, b, a);
 }
 
+pub fn readSprite(arg: *const Value) Sprite {
+    var sprites: [1]Sprite = undefined;
+    readSprites(arg, sprites[0..]);
+    return sprites[0];
+}
+
 pub fn readSprites(arg: *const Value, items: []Sprite) void {
     var guest_ptr = arg.to_guest_ptr();
     for (0..items.len) |idx| {
@@ -156,4 +164,67 @@ pub fn writeNumber(guest_ptr: usize, val: anytype) usize {
     const mem_data = get_app().guest_mem_data();
     std.mem.writeInt(T, @ptrCast(mem_data[guest_ptr..]), @bitCast(val), .little);
     return size;
+}
+
+pub fn writeMat(_guest_ptr: usize, mat: Mat) void {
+    var guest_ptr = _guest_ptr;
+    for (mat) |item| {
+        for (0..4) |idx| {
+            guest_ptr += writeNumber(guest_ptr, item[idx]);
+        }
+    }
+}
+
+pub fn readMat(_guest_ptr: usize) Mat {
+    var guest_ptr = _guest_ptr;
+    var mat: Mat = undefined;
+    for (0..4) |mat_idx| {
+        var arr: [4]f32 = undefined;
+        for (0..4) |idx| {
+            guest_ptr += readNumber(f32, guest_ptr, &arr[idx]);
+        }
+        mat[mat_idx] = arr;
+    }
+    return mat;
+}
+
+pub fn readSpriteOption(_guest_ptr: usize) SpriteOption {
+    const mem_data = get_app().guest_mem_data();
+    const flags = mem_data[_guest_ptr];
+    var guest_ptr = _guest_ptr + 1;
+    var opt: SpriteOption = undefined;
+    if (flags & (1 << 0) > 0) {
+        guest_ptr += readNumber(f32, guest_ptr, &opt.pos.x);
+        guest_ptr += readNumber(f32, guest_ptr, &opt.pos.y);
+    }
+    if (flags & (1 << 1) > 0) {
+        opt.tint_color.r = mem_data[guest_ptr + 0];
+        opt.tint_color.g = mem_data[guest_ptr + 1];
+        opt.tint_color.b = mem_data[guest_ptr + 2];
+        opt.tint_color.a = mem_data[guest_ptr + 3];
+        guest_ptr += 4;
+    }
+    if (flags & (1 << 2) > 0) {
+        guest_ptr += readNumber(f32, guest_ptr, &opt.scale.x);
+        guest_ptr += readNumber(f32, guest_ptr, &opt.scale.y);
+    }
+    if (flags & (1 << 3) > 0) {
+        guest_ptr += readNumber(f32, guest_ptr, &opt.rotate_degree);
+    }
+    if (flags & (1 << 4) > 0) {
+        guest_ptr += readNumber(f32, guest_ptr, &opt.anchor_point.x);
+        guest_ptr += readNumber(f32, guest_ptr, &opt.anchor_point.y);
+    }
+    if (flags & (1 << 5) > 0) {
+        opt.flip_h = mem_data[guest_ptr] > 0;
+        guest_ptr += 1;
+    }
+    if (flags & (1 << 6) > 0) {
+        opt.flip_v = mem_data[guest_ptr] > 0;
+        guest_ptr += 1;
+    }
+    if (flags & (1 << 7) > 0) {
+        guest_ptr += readNumber(f32, guest_ptr, &opt.depth);
+    }
+    return opt;
 }

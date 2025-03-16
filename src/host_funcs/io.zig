@@ -16,7 +16,6 @@ const newi32 = Value.newI32;
 const newi64 = Value.newI64;
 const newf32 = Value.newF32;
 const newf64 = Value.newF64;
-const to_host_byte_slice = Value.to_host_byte_slice;
 
 pub const FUNCS = [_]c.FuncDef{
     .{ "get_keyboard_state", getKeyboardState, &.{I32}, &.{I64} },
@@ -35,8 +34,8 @@ pub fn getKeyboardState(args: []const Value, results: []Value) ?Ptr {
 
 // [moonbit] fn is_key_pressed_ffi(states_ptr: UInt64, states_len: UInt64, scancode: Int) -> Bool = "lunar" "is_key_pressed"
 pub fn isKeyPressed(args: []const Value, results: []Value) ?Ptr {
-    const states = to_host_byte_slice(&args[0], &args[1]);
-    const scancode: c_uint = @intCast(args[2].of.i32);
+    const states = args[0].to_host_byte_slice(&args[1]);
+    const scancode = args[2].to_number(c_uint);
 
     const kbd = jok.io.KeyboardState{ .states = states };
     const is_pressed = kbd.isPressed(@enumFromInt(scancode));

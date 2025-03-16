@@ -182,18 +182,16 @@ pub const Value = extern struct {
     pub fn to_guest_ptr(self: *const Value) usize {
         return @intCast(self.to_number(u32));
     }
-    pub fn to_host_ptr(val: *const Value) *anyopaque {
-        const ptr_int: usize = @intCast(val.of.i64);
-        return @ptrFromInt(ptr_int);
+    pub fn to_host_ptr(self: *const Value, comptime T: type) *T {
+        const ptr_raw: *anyopaque = @ptrFromInt(self.to_number(usize));
+        return @alignCast(@ptrCast(ptr_raw));
     }
-    pub fn to_host_byte_ptr(val: *const Value) [*]u8 {
-        const ptr_int: usize = @intCast(val.of.i64);
-        const ptr: [*]u8 = @ptrFromInt(ptr_int);
-        return ptr;
+    pub fn to_host_byte_ptr(self: *const Value) [*]u8 {
+        return @ptrFromInt(self.to_number(usize));
     }
     pub fn to_host_byte_slice(self: *const Value, val2: *const Value) []u8 {
         const ptr = self.to_host_byte_ptr();
-        const len: usize = @intCast(val2.of.i64);
+        const len = val2.to_number(usize);
         return ptr[0..len];
     }
 };

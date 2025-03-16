@@ -18,7 +18,6 @@ const newi32 = Value.newI32;
 const newi64 = Value.newI64;
 const newf32 = Value.newF32;
 const newf64 = Value.newF64;
-const to_host_byte_slice = Value.to_host_byte_slice;
 
 pub const FUNCS = [_]c.FuncDef{
     .{ "sprite_sheet_from_pictures_in_dir", fromPicturesInDir, &.{ I32, I32, I32, I32 }, &.{I64} },
@@ -57,7 +56,7 @@ pub fn fromPicturesInDir(args: []const Value, results: []Value) ?Ptr {
 pub fn getSpriteByName(args: []const Value, results: []Value) ?Ptr {
     var success: bool = false;
     defer results[0] = newi32(@intFromBool(success));
-    const sheet: *j2d.SpriteSheet = @alignCast(@ptrCast(args[0].to_host_ptr()));
+    const sheet = args[0].to_host_ptr(j2d.SpriteSheet);
     const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
     const sp = sheet.getSpriteByName(name) orelse return null;
     c.writeSprite(&args[3], sp);
