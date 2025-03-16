@@ -4,6 +4,11 @@ pub struct AnimationSystem {
 }
 
 ///|
+pub fn AnimationSystem::new(inner : UInt64) -> AnimationSystem {
+  { inner, }
+}
+
+///|
 fn animation_system_create_ffi(name_ptr : Int, name_len : Int) -> UInt64 = "lunar" "animation_system_create"
 
 ///|

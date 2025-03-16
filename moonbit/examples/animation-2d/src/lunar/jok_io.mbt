@@ -26,14 +26,14 @@ pub struct MouseState {
   pos : Point
 }
 
-///|
-pub enum MouseButton {
-  Left = 1
-  Middle = 2
-  Right = 3
-  Extra1 = 4
-  Extra2 = 5
-}
+///| FIXME: TODO
+// pub enum MouseButton {
+//   Left = 1
+//   Middle = 2
+//   Right = 3
+//   Extra1 = 4
+//   Extra2 = 5
+// }
 
 ///|
 fn get_keyboard_state_ffi(len_ptr : Int) -> UInt64 = "lunar" "get_keyboard_state"

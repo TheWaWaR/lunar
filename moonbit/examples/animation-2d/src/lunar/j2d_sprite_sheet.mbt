@@ -4,11 +4,16 @@ pub struct SpriteSheet {
 }
 
 ///|
+pub fn SpriteSheet::new(inner : UInt64) -> SpriteSheet {
+  { inner, }
+}
+
+///|
 fn sprite_sheet_from_pictures_in_dir_ffi(
   dir_ptr : Int,
   dir_len : Int,
-  width : Int,
-  height : Int
+  width : UInt,
+  height : UInt
 ) -> UInt64 = "lunar" "sprite_sheet_from_pictures_in_dir"
 
 ///|
@@ -22,8 +27,8 @@ fn get_sprite_by_name_ffi(
 ///|
 pub fn SpriteSheet::from_pictures_in_dir(
   dir : String,
-  width : Int,
-  height : Int
+  width : UInt,
+  height : UInt
 ) -> SpriteSheet? {
   let dir_ptr = str2ptr(dir)
   let inner = sprite_sheet_from_pictures_in_dir_ffi(
