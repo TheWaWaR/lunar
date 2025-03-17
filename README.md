@@ -51,6 +51,6 @@ zig build run -- ./moonbit/examples/animation-2d/target/wasm/release/build/lunar
 
 # Potential future of this project
 * Write entire game use moonbit
-  - Release as wasm (since wasmtime JIT is [fast][https://programming-language-benchmarks.vercel.app/wasm-vs-lua])
+  - Release as wasm (since wasmtime JIT is [fast](https://programming-language-benchmarks.vercel.app/wasm-vs-lua))
   - Release as native dynamic library (since moonbit can compile to [native](https://www.moonbitlang.com/blog/native))
 * Write game mod use moobit (since wasm is a performant and safe sandbox)
