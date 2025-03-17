@@ -70,9 +70,10 @@ pub fn readFromUtf16Str(
         buf,
         @alignCast(@ptrCast(mem_data[ptr .. ptr + len * 2])),
     );
+    const str = buf.items;
     // For also used as: [*:0]u8
     try buf.append(0);
-    return buf.items;
+    return str;
 }
 
 pub fn readBytes(args: []const Value) []const u8 {

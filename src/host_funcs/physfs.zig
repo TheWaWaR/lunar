@@ -30,7 +30,6 @@ pub fn mount(args: []const Value, results: []Value) ?Ptr {
     const dir, const mount_point = c.readFromUtf16StrWithApp2(args[0..2], args[2..4]) orelse return null;
     const append: bool = args[4].of.i32 > 0;
 
-    std.log.info("physfs.mount({s}, {s}, {})", .{ dir, mount_point, append });
     physfs.mount(@ptrCast(dir), @ptrCast(mount_point), append) catch |err| {
         std.log.err("physfs.mount({s}, {s}, {}) error: {}", .{ dir, mount_point, append, err });
         results[0] = newi32(0);
