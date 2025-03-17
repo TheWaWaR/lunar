@@ -16,6 +16,7 @@ pub fn lunar_init() -> Unit {
   @lunar.log("size: \{size}")
   anim_sys.val = @lunar.AnimationSystem::create("2d").unwrap()
   sheet.val = @lunar.SpriteSheet::from_pictures_in_dir(
+    "2d",
     "images",
     size.width,
     size.height,

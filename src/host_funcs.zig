@@ -41,7 +41,7 @@ pub fn defineHostFuncs(linker: w.Linker) !void {
         try linker.defineFunc(
             MODULE,
             func_name,
-            w.wrapHostFn(callback),
+            w.wrapHostFn(callback, func_name),
             params_buf[0..params.len],
             results_buf[0..results.len],
             &env_data,

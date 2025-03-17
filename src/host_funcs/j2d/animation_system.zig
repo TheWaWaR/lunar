@@ -95,7 +95,7 @@ pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
     const app = get_app();
     const as = args[0].toHostPtr(j2d.AnimationSystem);
     const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
-    const sp_count = args[4].toNumber(usize);
+    const sp_count: usize = @intCast(args[4].toNumber(i32));
     const sp_items: []Sprite = app.ctx.allocator().alloc(Sprite, sp_count) catch @panic("OOM");
     defer app.ctx.allocator().free(sp_items);
     const frames: []Frame.Data = app.ctx.allocator().alloc(Frame.Data, sp_count) catch @panic("OOM");

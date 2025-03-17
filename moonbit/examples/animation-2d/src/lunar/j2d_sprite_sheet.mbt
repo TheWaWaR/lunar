@@ -10,6 +10,8 @@ pub fn SpriteSheet::new(inner : UInt64) -> SpriteSheet {
 
 ///|
 fn sprite_sheet_from_pictures_in_dir_ffi(
+  name_ptr: Int,
+  name_len: Int,
   dir_ptr : Int,
   dir_len : Int,
   width : UInt,
@@ -26,13 +28,15 @@ fn get_sprite_by_name_ffi(
 
 ///|
 pub fn SpriteSheet::from_pictures_in_dir(
+  name: String,
   dir : String,
   width : UInt,
   height : UInt
 ) -> SpriteSheet? {
-  let dir_ptr = str2ptr(dir)
   let inner = sprite_sheet_from_pictures_in_dir_ffi(
-    dir_ptr,
+    str2ptr(name),
+    name.length(),
+    str2ptr(dir),
     dir.length(),
     width,
     height,

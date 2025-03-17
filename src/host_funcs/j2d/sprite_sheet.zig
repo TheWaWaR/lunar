@@ -18,23 +18,25 @@ const newi32 = Value.newI32;
 const newi64 = Value.newI64;
 const newf32 = Value.newF32;
 const newf64 = Value.newF64;
+const newptr = Value.newPtr;
 
 pub const FUNCS = [_]c.FuncDef{
-    .{ "sprite_sheet_from_pictures_in_dir", fromPicturesInDir, &.{ I32, I32, I32, I32 }, &.{I64} },
+    .{ "sprite_sheet_from_pictures_in_dir", fromPicturesInDir, &.{ I32, I32, I32, I32, I32, I32 }, &.{I64} },
     .{ "get_sprite_by_name", getSpriteByName, &.{ I64, I32, I32, I32 }, &.{I32} },
 };
 
 // [moonbit]
 // fn sprite_sheet_from_pictures_in_dir_ffi(
+//   name_ptr: Int, name_len: Int,
 //   dir_ptr: Int, dir_len: Int,
 //   width: Int, height: Int,
 // ) -> UInt64 = "lunar" "sprite_sheet_from_pictures_in_dir"
 pub fn fromPicturesInDir(args: []const Value, results: []Value) ?Ptr {
-    var sheet_ptr: i64 = 0;
-    defer results[0] = newi64(sheet_ptr);
-    const dir = c.readFromUtf16StrWithApp(args[0..2]) orelse return null;
-    const width = args[2].toNumber(u32);
-    const height = args[3].toNumber(u32);
+    results[0] = newi64(0);
+    const name = c.readFromUtf16StrAlloc(args[0..2]) orelse return null;
+    const dir = c.readFromUtf16StrWithApp(args[2..4]) orelse return null;
+    const width = args[4].toNumber(u32);
+    const height = args[5].toNumber(u32);
     const app = get_app();
     const sheet = j2d.SpriteSheet.fromPicturesInDir(app.ctx, @ptrCast(dir), width, height, .{}) catch |err| {
         std.log.err(
@@ -43,7 +45,8 @@ pub fn fromPicturesInDir(args: []const Value, results: []Value) ?Ptr {
         );
         return null;
     };
-    sheet_ptr = @intCast(@intFromPtr(sheet));
+    get_app().sheet_map_2d.put(name, sheet) catch @panic("OOM");
+    results[0] = newptr(sheet);
     return null;
 }
 

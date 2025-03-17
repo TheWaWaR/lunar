@@ -28,7 +28,7 @@ pub const WasmtimeError = error{
 
 pub const HostFn = *const fn (args: []const Value, results: []Value) ?Ptr;
 
-pub fn wrapHostFn(comptime host_fn: HostFn) CallbackFn {
+pub fn wrapHostFn(comptime host_fn: HostFn, comptime name: []const u8) CallbackFn {
     return struct {
         fn callback(
             env: Ptr,
@@ -40,7 +40,11 @@ pub fn wrapHostFn(comptime host_fn: HostFn) CallbackFn {
         ) callconv(.C) ?Ptr {
             _ = env;
             _ = caller;
-            return host_fn(args[0..nargs], results[0..nresults]);
+            _ = name;
+            // std.log.info("BEGIN call host: {s}", .{name});
+            const ret = host_fn(args[0..nargs], results[0..nresults]);
+            // std.log.info("END call host: {s}", .{name});
+            return ret;
         }
     }.callback;
 }

@@ -133,6 +133,7 @@ pub fn quit(ctx: jok.Context) void {
             app.ctx.allocator().free(kv.key_ptr.*);
             kv.value_ptr.*.destroy();
         }
+        map.deinit();
     }
     app.batchpool_2d.deinit();
 
