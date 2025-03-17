@@ -27,7 +27,7 @@ pub const FUNCS = [_]c.FuncDef{
 fn clear(args: []const Value, results: []Value) ?Ptr {
     results[0] = newi32(0);
     const renderer = args[0].toHostPtr(Renderer);
-    const color = c.readColorArg(args[1]);
+    const color = c.readColorArg(&args[1]);
     renderer.*.clear(color) catch |err| {
         std.log.err("renderer.clear() error: {}", .{err});
         return null;

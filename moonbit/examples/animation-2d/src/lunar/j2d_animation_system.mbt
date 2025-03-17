@@ -155,3 +155,14 @@ pub fn AnimationSystem::get_current_frame(
     None
   }
 }
+
+///|
+fn animation_system_update_ffi(as_ptr : UInt64, delta_tick : Float) = "lunar" "animation_system_update"
+
+///|
+pub fn AnimationSystem::update(
+  self : AnimationSystem,
+  delta_tick : Float
+) -> Unit {
+  animation_system_update_ffi(self.inner, delta_tick)
+}

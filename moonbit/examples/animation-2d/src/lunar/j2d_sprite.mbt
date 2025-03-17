@@ -5,7 +5,7 @@ pub struct Sprite {
   uv0 : Point
   uv1 : Point
   tex : UInt64
-}
+} derive(Show)
 
 ///|
 fn sprite_get_sub_sprite_ffi(

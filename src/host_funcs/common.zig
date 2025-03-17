@@ -210,11 +210,9 @@ pub fn readSpriteOption(_guest_ptr: usize) SpriteOption {
     const mem_data = get_app().guest_mem_data();
     const flags = mem_data[_guest_ptr];
     var guest_ptr = _guest_ptr + 1;
-    var opt: SpriteOption = undefined;
-    if (flags & (1 << 0) > 0) {
-        guest_ptr += readNumber(f32, guest_ptr, &opt.pos.x);
-        guest_ptr += readNumber(f32, guest_ptr, &opt.pos.y);
-    }
+    var opt: SpriteOption = .{ .pos = .{.x = 0, .y = 0} };
+    guest_ptr += readNumber(f32, guest_ptr, &opt.pos.x);
+    guest_ptr += readNumber(f32, guest_ptr, &opt.pos.y);
     if (flags & (1 << 1) > 0) {
         opt.tint_color.r = mem_data[guest_ptr + 0];
         opt.tint_color.g = mem_data[guest_ptr + 1];

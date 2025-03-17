@@ -6,6 +6,7 @@ const io = @import("host_funcs/io.zig");
 const ctx = @import("host_funcs/context.zig");
 const physfs = @import("host_funcs/physfs.zig");
 const j2d = @import("host_funcs/j2d.zig");
+const renderer = @import("host_funcs/renderer.zig");
 
 const I32 = w.WasmValKind.i32;
 const I64 = w.WasmValKind.i64;
@@ -14,7 +15,7 @@ const F64 = w.WasmValKind.f64;
 
 const MODULE: []const u8 = "lunar";
 
-const FUNCS = j2d.FUNCS ++ physfs.FUNCS ++ io.FUNCS ++ ctx.FUNCS;
+const FUNCS = j2d.FUNCS ++ physfs.FUNCS ++ io.FUNCS ++ ctx.FUNCS ++ renderer.FUNCS;
 
 var env_data: usize = 0;
 

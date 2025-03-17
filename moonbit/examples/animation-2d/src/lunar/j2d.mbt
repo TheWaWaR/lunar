@@ -5,7 +5,7 @@ pub struct Batch2D {
 
 ///|
 pub struct SpriteOption {
-  pos : Point?
+  pos : Point
   tint_color : Color?
   scale : Point?
   rotate_degree : Float?
@@ -13,30 +13,27 @@ pub struct SpriteOption {
   flip_h : Bool?
   flip_v : Bool?
   depth : Float?
-}
+} derive(Show)
 
 ///|
-pub fn SpriteOption::default() -> SpriteOption {
-  SpriteOption::{
-    pos: None,
-    tint_color: None,
-    scale: None,
-    rotate_degree: None,
-    anchor_point: None,
-    flip_h: None,
-    flip_v: None,
-    depth: None,
-  }
+pub fn SpriteOption::new(
+  pos~ : Point,
+  tint_color~ : Color? = None,
+  scale~ : Point? = None,
+  rotate_degree~ : Float? = None,
+  anchor_point~ : Point? = None,
+  flip_h~ : Bool? = None,
+  flip_v~ : Bool? = None,
+  depth~ : Float? = None
+) -> SpriteOption {
+  { pos, tint_color, scale, rotate_degree, anchor_point, flip_h, flip_v, depth }
 }
 
 ///|
 pub fn SpriteOption::writeTo(self : SpriteOption, ptr : Int) -> Int {
-  let mut flags = 0
-  let mut size = 0
-  if self.pos is Some(v) {
-    flags = flags | 1
-    size += v.writeTo(ptr + size)
-  }
+  let mut flags = 1
+  let mut size = 1
+  size += self.pos.writeTo(ptr + size)
   if self.tint_color is Some(v) {
     flags = flags | 2
     size += v.writeTo(ptr + size)
@@ -69,6 +66,7 @@ pub fn SpriteOption::writeTo(self : SpriteOption, ptr : Int) -> Int {
     storef32(ptr + size, v)
     size += 4
   }
+  store8(ptr, flags)
   size
 }
 

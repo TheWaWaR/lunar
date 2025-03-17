@@ -30,6 +30,7 @@ pub const FUNCS = [_]c.FuncDef{
     .{ "animation_system_reset", reset, &.{ I64, I32, I32 }, &.{I32} },
     .{ "animation_system_set_stop", setStop, &.{ I64, I32, I32, I32 }, &.{I32} },
     .{ "animation_system_get_current_frame", getCurrentFrame, &.{ I64, I32, I32, I32 }, &.{I32} },
+    .{ "animation_system_update", update, &.{ I64, F32 }, &.{} },
 };
 
 // [moonbit]
@@ -204,5 +205,13 @@ fn getCurrentFrame(args: []const Value, results: []Value) ?Ptr {
     };
     _ = c.writeSpriteArg(&args[3], frame.sp);
     results[0] = newi32(1);
+    return null;
+}
+
+// [moonbit] fn animation_system_update_ffi(as_ptr: UInt64, delta_tick: Float) = "lunar" "animation_system_update"
+fn update(args: []const Value, _: []Value) ?Ptr {
+    const as = args[0].toHostPtr(AnimationSystem);
+    const delta_tick = args[1].toNumber(f32);
+    as.update(delta_tick);
     return null;
 }
