@@ -96,8 +96,6 @@ pub fn update(ctx: jok.Context) !void {
 }
 
 pub fn draw(ctx: jok.Context) !void {
-    try ctx.renderer().clear(.none);
-    ctx.displayStats(.{});
     // your drawing code
     const t1 = std.time.microTimestamp();
     try app.guest.draw();

@@ -24,6 +24,7 @@ pub const FUNCS = [_]c.FuncDef{
     .{ "delta_seconds", deltaSeconds, &.{}, &.{F32} },
     .{ "get_canvas_size", getCanvasSize, &.{ I32, I32 }, &.{} },
     .{ "get_renderer", getRenderer, &.{}, &.{I64} },
+    .{ "display_stats", displayStats, &.{}, &.{} },
 };
 
 // [moonbit]
@@ -61,5 +62,11 @@ fn getCanvasSize(args: []const Value, _: []Value) ?Ptr {
 // [moonbit] fn get_renderer_ffi() -> UInt64 = "lunar" "get_renderer"
 fn getRenderer(_: []const Value, results: []Value) ?Ptr {
     results[0] = newptr(get_app().get_renderer());
+    return null;
+}
+
+// [moonbit] fn display_stats_ffi() = "lunar" "display_stats"
+fn displayStats(_: []const Value, _: []Value) ?Ptr {
+    get_app().ctx.displayStats(.{});
     return null;
 }

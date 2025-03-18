@@ -114,6 +114,8 @@ pub fn lunar_update() -> Unit {
 ///|
 pub fn lunar_draw() -> Unit {
   @lunar.get_renderer().clear(@lunar.Color::rgb(77, 77, 77))
+  @lunar.display_stats()
+
   let batch = @lunar.Batch2D::new()
   let _success = batch.sprite(
     sheet.val.get_sprite_by_name("player").unwrap(),

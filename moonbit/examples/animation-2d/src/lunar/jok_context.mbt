@@ -47,3 +47,11 @@ fn get_renderer_ffi() -> UInt64 = "lunar" "get_renderer"
 pub fn get_renderer() -> Renderer {
   { inner: get_renderer_ffi() }
 }
+
+///|
+fn display_stats_ffi() = "lunar" "display_stats"
+
+///|
+pub fn display_stats() -> Unit {
+  display_stats_ffi()
+}
