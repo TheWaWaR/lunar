@@ -49,9 +49,4 @@ pub fn get_renderer() -> Renderer {
 }
 
 ///|
-fn display_stats_ffi() = "lunar" "display_stats"
-
-///|
-pub fn display_stats() -> Unit {
-  display_stats_ffi()
-}
+pub fn display_stats() = "lunar" "display_stats"
