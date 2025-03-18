@@ -71,14 +71,17 @@ pub fn lunar_event(_ : UInt) -> Unit {
 
 ///|
 pub fn lunar_update() -> Unit {
-  let mut force_replay = false
-  let mut pos_x = pos.val.x
-  let mut pos_y = pos.val.y
   let kbd = @lunar.get_keyboard_state()
   if kbd.is_pressed(@lunar.SDL_SCANCODE_Q) {
     @lunar.log("Quit game")
     @lunar.kill()
-  } else if kbd.is_pressed(@lunar.SDL_SCANCODE_W) {
+    return
+  }
+
+  let mut force_replay = false
+  let mut pos_x = pos.val.x
+  let mut pos_y = pos.val.y
+  if kbd.is_pressed(@lunar.SDL_SCANCODE_W) {
     @lunar.log("pressed: W/up")
     pos_y -= velocity * @lunar.delta_seconds()
     animation.val = "player_up"

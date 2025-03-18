@@ -27,6 +27,16 @@ pub const FUNCS = [_]c.FuncDef{
     .{ "display_stats", displayStats, &.{}, &.{} },
 };
 
+// NOTE: for native host function
+pub fn debug_print(text_ptr: i32, text_len: i32, pos_ptr: i32, color_ptr: i32) void {
+    const params: []Value = &.{
+        newi32(text_ptr),
+        newi32(text_len),
+        newi32(pos_ptr),
+        newi32(color_ptr),
+    };
+    debugPrint(params, &.{});
+}
 // [moonbit]
 // fn debug_print_ffi(
 //   text_ptr: Int, text_len: Int,
@@ -59,6 +69,12 @@ fn getCanvasSize(args: []const Value, _: []Value) ?Ptr {
     return null;
 }
 
+// NOTE: for native host function
+pub fn get_renderer() u64 {
+    var results: [1]Value = undefined;
+    _ = getRenderer(&.{}, &results);
+    return results[0].toNumber(u64);
+}
 // [moonbit] fn get_renderer_ffi() -> UInt64 = "lunar" "get_renderer"
 fn getRenderer(_: []const Value, results: []Value) ?Ptr {
     results[0] = newptr(get_app().get_renderer());
