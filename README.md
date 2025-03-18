@@ -47,7 +47,7 @@ zig build run -- ./moonbit/examples/animation-2d/target/wasm/release/build/lunar
 ```
 
 ## Demo
-![demo](assets/images/demo.jpg)
+![demo](assets/demo.jpg)
 
 # Potential future of this project
 * Write entire game use moonbit
