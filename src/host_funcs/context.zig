@@ -28,14 +28,14 @@ pub const FUNCS = [_]c.FuncDef{
 };
 
 // NOTE: for native host function
-pub fn debug_print(text_ptr: i32, text_len: i32, pos_ptr: i32, color_ptr: i32) void {
-    const params: []Value = &.{
+pub export fn debug_print(text_ptr: i32, text_len: i32, pos_ptr: i32, color_ptr: i32) void {
+    const params: []const Value = &.{
         newi32(text_ptr),
         newi32(text_len),
         newi32(pos_ptr),
         newi32(color_ptr),
     };
-    debugPrint(params, &.{});
+    _ = debugPrint(params, &.{});
 }
 // [moonbit]
 // fn debug_print_ffi(
@@ -70,7 +70,7 @@ fn getCanvasSize(args: []const Value, _: []Value) ?Ptr {
 }
 
 // NOTE: for native host function
-pub fn get_renderer() u64 {
+pub export fn get_renderer() u64 {
     var results: [1]Value = undefined;
     _ = getRenderer(&.{}, &results);
     return results[0].toNumber(u64);
