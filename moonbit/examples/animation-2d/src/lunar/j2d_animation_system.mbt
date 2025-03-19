@@ -199,6 +199,11 @@ pub(all) struct DrawCmd {
 }
 
 ///|
+pub fn DrawCmd::new(cmd : Cmd, depth : Float) -> DrawCmd {
+  { cmd, depth }
+}
+
+///|
 pub fn DrawCmd::to_data(self : DrawCmd) -> FrameData {
   FrameData::DrawCmd(self)
 }
@@ -240,6 +245,18 @@ pub(all) struct CircleCmd {
   color : UInt
   thickness : Float
   num_segments : UInt
+}
+
+///|
+pub fn CircleCmd::new(
+  p : Point,
+  radius : Float,
+  color : Color,
+  thickness : Float,
+  num_segments : UInt
+) -> CircleCmd {
+  let color = color.to_internal()
+  { p, radius, color, thickness, num_segments }
 }
 
 ///|

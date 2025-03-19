@@ -1,4 +1,19 @@
 ///|
+typealias FrameData = @lunar.FrameData
+
+///|
+typealias DrawCmd = @lunar.DrawCmd
+
+///|
+typealias CircleCmd = @lunar.CircleCmd
+
+///|
+typealias Color = @lunar.Color
+
+///|
+typealias Point = @lunar.Point
+
+///|
 let sheet : Ref[@lunar.SpriteSheet] = { val: @lunar.SpriteSheet::new(0) }
 
 ///|
@@ -61,6 +76,24 @@ pub fn lunar_init() -> Unit {
     ][:],
     6,
   )
+  let dcmds : UninitializedArray[FrameData] = UninitializedArray::make(20)
+  for i = 0; i < 20; i = i + 1 {
+    dcmds[i] = DrawCmd(
+      DrawCmd::new(
+        Circle(
+          CircleCmd::new(
+            Point::new(0, 0),
+            ((100.0 - i.to_double()) * 10.0).abs().to_float(),
+            Color::rgb((i * 50 % 255).to_byte(), (i * 50 % 255).to_byte(), 0),
+            50.0,
+            2,
+          ),
+        ),
+        0.5,
+      ),
+    )
+  }
+  let _success = anim_sys.val.add_simple("player_circle_bg", dcmds[:], 10)
 
 }
 
@@ -150,5 +183,5 @@ pub fn lunar_quit() -> Unit {
 
 ///| Receive AnimationSystem signal callback
 pub fn lunar_signal() -> Unit {
-  // let _success = anim_sys.val.set_stop("player_circle_bg", true)
+  let _success = anim_sys.val.set_stop("player_circle_bg", true)
 }

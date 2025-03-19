@@ -81,6 +81,14 @@ pub fn Color::writeTo(self : Color, ptr : Int) -> Int {
 }
 
 ///|
+pub fn Color::to_internal(self : Color) -> UInt {
+  self.r.to_uint() |
+  self.g.to_uint() << 8 |
+  self.b.to_uint() << 16 |
+  self.a.to_uint() << 24
+}
+
+///|
 pub fn Color::rgb(r : Byte, g : Byte, b : Byte) -> Color {
   { r, g, b, a: 255 }
 }
