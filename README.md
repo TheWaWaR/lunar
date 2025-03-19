@@ -37,7 +37,7 @@ cd wasmtime && tar -xf *.tar.xz && cd ..
 
 # ==== Build the game ====
 cd moonbit/examples/animation-2d/
-moon build --target moon
+moon build --target wasm
 cd ../../..
 
 # ==== Run the game ====
