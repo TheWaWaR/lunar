@@ -1,7 +1,4 @@
 ///|
-typealias FrameData = @lunar.FrameData
-
-///|
 let sheet : Ref[@lunar.SpriteSheet] = { val: @lunar.SpriteSheet::new(0) }
 
 ///|
@@ -40,45 +37,27 @@ pub fn lunar_init() -> Unit {
   let _success = anim_sys.val.add_simple(
     "player_left_right",
     [
-      FrameData::Sprite(
-        player.get_sub_sprite((4.0 * 16.0).to_float(), 0, 16, 16),
-      ),
-      FrameData::Sprite(
-        player.get_sub_sprite((5.0 * 16.0).to_float(), 0, 16, 16),
-      ),
-      FrameData::Sprite(
-        player.get_sub_sprite((3.0 * 16.0).to_float(), 0, 16, 16),
-      ),
+      player.get_sub_sprite((4.0 * 16.0).to_float(), 0, 16, 16).to_data(),
+      player.get_sub_sprite((5.0 * 16.0).to_float(), 0, 16, 16).to_data(),
+      player.get_sub_sprite((3.0 * 16.0).to_float(), 0, 16, 16).to_data(),
     ][:],
     6,
   )
   let _success = anim_sys.val.add_simple(
     "player_up",
     [
-      FrameData::Sprite(
-        player.get_sub_sprite((7.0 * 16.0).to_float(), 0, 16, 16),
-      ),
-      FrameData::Sprite(
-        player.get_sub_sprite((8.0 * 16.0).to_float(), 0, 16, 16),
-      ),
-      FrameData::Sprite(
-        player.get_sub_sprite((6.0 * 16.0).to_float(), 0, 16, 16),
-      ),
+      player.get_sub_sprite((7.0 * 16.0).to_float(), 0, 16, 16).to_data(),
+      player.get_sub_sprite((8.0 * 16.0).to_float(), 0, 16, 16).to_data(),
+      player.get_sub_sprite((6.0 * 16.0).to_float(), 0, 16, 16).to_data(),
     ][:],
     6,
   )
   let _success = anim_sys.val.add_simple(
     "player_down",
     [
-      FrameData::Sprite(
-        player.get_sub_sprite((1.0 * 16.0).to_float(), 0, 16, 16),
-      ),
-      FrameData::Sprite(
-        player.get_sub_sprite((2.0 * 16.0).to_float(), 0, 16, 16),
-      ),
-      FrameData::Sprite(
-        player.get_sub_sprite((0.0 * 16.0).to_float(), 0, 16, 16),
-      ),
+      player.get_sub_sprite((1.0 * 16.0).to_float(), 0, 16, 16).to_data(),
+      player.get_sub_sprite((2.0 * 16.0).to_float(), 0, 16, 16).to_data(),
+      player.get_sub_sprite((0.0 * 16.0).to_float(), 0, 16, 16).to_data(),
     ][:],
     6,
   )

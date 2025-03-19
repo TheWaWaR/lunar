@@ -127,7 +127,7 @@ pub fn readFrameDataPtr(init_guest_ptr: usize, data: *FrameData) usize {
         2 => guest_ptr += readDrawCmdPtr(guest_ptr, &data.dcmd),
         else => unreachable,
     }
-    return init_guest_ptr - guest_ptr;
+    return guest_ptr - init_guest_ptr;
 }
 
 pub fn readSpriteArg(arg: *const Value) Sprite {

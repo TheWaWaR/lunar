@@ -189,13 +189,18 @@ pub fn FrameData::writeTo(self : FrameData, init_ptr : Int) -> Int {
     }
   }
   store8(init_ptr, enum_tag)
-  init_ptr - ptr
+  ptr - init_ptr
 }
 
 ///|
 pub(all) struct DrawCmd {
   cmd : Cmd
   depth : Float
+}
+
+///|
+pub fn DrawCmd::to_data(self : DrawCmd) -> FrameData {
+  FrameData::DrawCmd(self)
 }
 
 ///|

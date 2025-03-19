@@ -46,6 +46,10 @@ pub fn Sprite::readFrom(ptr : Int) -> Sprite {
   Sprite::{ width, height, uv0, uv1, tex }
 }
 
+pub fn Sprite::to_data(self: Sprite) -> FrameData {
+  FrameData::Sprite(self)
+}
+
 ///|
 pub fn Sprite::get_sub_sprite(
   self : Sprite,
