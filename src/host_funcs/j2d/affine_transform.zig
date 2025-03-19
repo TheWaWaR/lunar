@@ -21,7 +21,7 @@ const newf64 = Value.newF64;
 
 pub const FUNCS = [_]c.FuncDef{
     .{ "affine_transform_init_2d", init, &.{I32}, &.{} },
-    .{ "affine_transform_translate_2d", translate, &.{ I32, F32, F32, I32 }, &.{} },
+    .{ "affine_transform_translate_2d", translate, &.{ I32, I32, I32 }, &.{} },
 };
 
 // [moonbit] fn affine_transform_init_2d_ffi(mat_ptr: Int)  = "lunar" "affine_transform_init_2d"

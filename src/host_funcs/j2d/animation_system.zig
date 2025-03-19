@@ -24,7 +24,7 @@ const newf64 = Value.newF64;
 pub const FUNCS = [_]c.FuncDef{
     .{ "animation_system_create", create, &.{ I32, I32 }, &.{I64} },
     .{ "connect_signal", connectSignal, &.{I64}, &.{I32} },
-    .{ "add_simple_animation", addSimple, &.{ I64, I32, I32, I32, I32, F32 }, &.{I32} },
+    .{ "add_simple_animation", addSimple, &.{ I64, I32, I32, I32, I32, F32, F32, I32, I32 }, &.{I32} },
     .{ "animation_system_is_over", isOver, &.{ I64, I32, I32, I32 }, &.{I32} },
     .{ "animation_system_is_stopped", isStopped, &.{ I64, I32, I32, I32 }, &.{I32} },
     .{ "animation_system_reset", reset, &.{ I64, I32, I32 }, &.{I32} },
@@ -87,8 +87,8 @@ pub fn connectSignal(args: []const Value, results: []Value) ?Ptr {
 // fn add_simple_animation_ffi(
 //   as_ptr: UInt64,
 //   name_ptr: Int, name_len: Int,
-//   sp_start_ptr: Int, sp_count: Int,
-//   fps: Float,
+//   frame_datas_start_ptr: Int, frame_data_count: Int,
+//   fps: Float, wait_time: Float, is_loop: Bool, reverse: Bool,
 // ) -> Bool = "lunar" "add_simple_animation"
 pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
     results[0] = newi32(0);
@@ -102,9 +102,16 @@ pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
     var guest_ptr = args[3].toGuestPtr();
     for (0..sp_count) |idx| {
         guest_ptr += c.readFrameDataPtr(guest_ptr, &frames[idx]);
+        if (frames[idx] == .dcmd) {
+            std.log.info("frame[{}]: {any}", .{ idx, frames[idx].dcmd.cmd });
+        }
     }
     const fps = args[5].toNumber(f32);
-    as.addSimple(name, frames, fps, .{}) catch |err| {
+    var opt = AnimationSystem.AnimOption{};
+    opt.wait_time = args[6].toNumber(f32);
+    opt.loop = args[7].toBool();
+    opt.reverse = args[8].toBool();
+    as.addSimple(name, frames, fps, opt) catch |err| {
         std.log.err("AnimationSystem.addSimple({s}) error: {}", .{ name, err });
         return null;
     };
@@ -200,7 +207,7 @@ fn getCurrentFrame(args: []const Value, results: []Value) ?Ptr {
         std.log.err("AnimationSystem.getCurrentFrame({s}) error: {}", .{ name, err });
         return null;
     };
-    _ = c.writeSpriteArg(&args[3], frame.sp);
+    _ = c.writeFrameDataArg(&args[3], &frame);
     results[0] = newi32(1);
     return null;
 }

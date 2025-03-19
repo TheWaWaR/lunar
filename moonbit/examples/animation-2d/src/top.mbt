@@ -8,6 +8,12 @@ typealias DrawCmd = @lunar.DrawCmd
 typealias CircleCmd = @lunar.CircleCmd
 
 ///|
+typealias AnimOption = @lunar.AnimOption
+
+///|
+typealias AffineTransform = @lunar.AffineTransform
+
+///|
 typealias Color = @lunar.Color
 
 ///|
@@ -22,7 +28,7 @@ let anim_sys : Ref[@lunar.AnimationSystem] = {
 }
 
 ///|
-let pos : Ref[@lunar.Point] = { val: @lunar.Point::new(200, 200) }
+let pos : Ref[Point] = { val: Point::new(200, 200) }
 
 ///|
 let flip_h : Ref[Bool] = { val: false }
@@ -42,6 +48,7 @@ pub fn lunar_init() -> Unit {
   let size = @lunar.get_canvas_size()
   @lunar.log("size: \{size}")
   anim_sys.val = @lunar.AnimationSystem::create("2d").unwrap()
+  let _success = anim_sys.val.connect_signal()
   sheet.val = @lunar.SpriteSheet::from_pictures_in_dir(
     "2d",
     "images",
@@ -77,23 +84,28 @@ pub fn lunar_init() -> Unit {
     6,
   )
   let dcmds : UninitializedArray[FrameData] = UninitializedArray::make(20)
-  for i = 0; i < 20; i = i + 1 {
+  for i in 0..<20 {
     dcmds[i] = DrawCmd(
       DrawCmd::new(
         Circle(
           CircleCmd::new(
-            Point::new(0, 0),
-            ((100.0 - i.to_double()) * 10.0).abs().to_float(),
-            Color::rgb((i * 50 % 255).to_byte(), (i * 50 % 255).to_byte(), 0),
-            50.0,
-            2,
+            p = Point::new(0, 0),
+            radius = (100.0 - i.to_double() * 10.0).abs().to_float(),
+            color = Color::rgb((i * 50 % 255).to_byte(), (i * 50 % 255).to_byte(), 0),
+            num_segments = 50,
+            thickness = 6.0,
           ),
         ),
         0.5,
       ),
     )
   }
-  let _success = anim_sys.val.add_simple("player_circle_bg", dcmds[:], 10)
+  let _success = anim_sys.val.add_simple(
+    "player_circle_bg",
+    dcmds[:],
+    10,
+    opt=AnimOption::new(is_loop=true),
+  )
 
 }
 
@@ -114,65 +126,71 @@ pub fn lunar_update() -> Unit {
   let mut pos_x = pos.val.x
   let mut pos_y = pos.val.y
   if kbd.is_pressed(@lunar.SDL_SCANCODE_W) {
-    @lunar.log("pressed: W/up")
     pos_y -= velocity * @lunar.delta_seconds()
     animation.val = "player_up"
     flip_h.val = false
     force_replay = true
   } else if kbd.is_pressed(@lunar.SDL_SCANCODE_S) {
-    @lunar.log("pressed: S/down")
     pos_y += velocity * @lunar.delta_seconds()
     animation.val = "player_down"
     flip_h.val = false
     force_replay = true
   } else if kbd.is_pressed(@lunar.SDL_SCANCODE_D) {
-    @lunar.log("pressed: D/right")
     pos_x += velocity * @lunar.delta_seconds()
     animation.val = "player_left_right"
     flip_h.val = true
     force_replay = true
   } else if kbd.is_pressed(@lunar.SDL_SCANCODE_A) {
-    @lunar.log("pressed: A/left")
     pos_x -= velocity * @lunar.delta_seconds()
     animation.val = "player_left_right"
     flip_h.val = false
     force_replay = true
   }
-  pos.val = @lunar.Point::new(pos_x, pos_y)
+  pos.val = Point::new(pos_x, pos_y)
   if force_replay && anim_sys.val.is_over(animation.val).unwrap() {
     let _success = anim_sys.val.reset(animation.val)
-    // anim_sys.val.set_stop("player_circle_bg", false)
+    let _success = anim_sys.val.set_stop("player_circle_bg", false)
+
   }
   anim_sys.val.update(@lunar.delta_seconds())
 }
 
 ///|
 pub fn lunar_draw() -> Unit {
-  @lunar.get_renderer().clear(@lunar.Color::rgb(77, 77, 77))
+  @lunar.get_renderer().clear(Color::rgb(77, 77, 77))
   @lunar.display_stats()
   let batch = @lunar.Batch2D::new()
   let _success = batch.sprite(
     sheet.val.get_sprite_by_name("player").unwrap(),
     @lunar.SpriteOption::new(
-      pos=@lunar.Point::new(0, 50),
-      tint_color=Some(@lunar.Color::rgb(100, 100, 100)),
-      scale=Some(@lunar.Point::new(4, 4)),
+      pos=Point::new(0, 50),
+      tint_color=Some(Color::rgb(100, 100, 100)),
+      scale=Some(Point::new(4, 4)),
     ),
   )
+  if anim_sys.val.is_stopped("player_circle_bg").unwrap() {
+    @lunar.log("push dcmd")
+    let _success = batch.push_transform()
+    let trs = AffineTransform::init().translate(pos.val)
+    batch.set_transform(trs)
+    let cmd = anim_sys.val.get_current_frame("player_circle_bg").unwrap()
+    let _success = batch.push_draw_cmd(cmd)
+    batch.pop_transform()
+  }
   let _success = batch.sprite(
-    anim_sys.val.get_current_frame(animation.val).unwrap(),
+    anim_sys.val.get_current_frame(animation.val).unwrap().get_sprite().unwrap(),
     @lunar.SpriteOption::new(
       pos=pos.val,
       flip_h=Some(flip_h.val),
-      scale=Some(@lunar.Point::new(5, 5)),
-      anchor_point=Some(@lunar.Point::new(0.5, 0.5)),
+      scale=Some(Point::new(5, 5)),
+      anchor_point=Some(Point::new(0.5, 0.5)),
     ),
   )
   batch.submit()
   @lunar.debug_print(
     "Press W/S/A/D to move character around",
-    pos=@lunar.Point::new(200.0, 0.0),
-    color=@lunar.Color::blue(),
+    pos=Point::new(200.0, 0.0),
+    color=Color::blue(),
   )
 }
 
@@ -183,5 +201,7 @@ pub fn lunar_quit() -> Unit {
 
 ///| Receive AnimationSystem signal callback
 pub fn lunar_signal() -> Unit {
+  @lunar.log("signal, setStop(player_circle_bg, true)")
   let _success = anim_sys.val.set_stop("player_circle_bg", true)
+
 }

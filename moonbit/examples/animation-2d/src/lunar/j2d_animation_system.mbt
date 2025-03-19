@@ -29,29 +29,36 @@ fn add_simple_animation_ffi(
   name_len : Int,
   sp_start_ptr : Int,
   sp_count : Int,
-  fps : Float
+  fps : Float,
+  wait_time : Float,
+  is_loop : Bool,
+  reverse : Bool
 ) -> Bool = "lunar" "add_simple_animation"
 
 ///|
 pub fn AnimationSystem::add_simple(
   self : AnimationSystem,
   name : String,
-  sprites : ArrayView[FrameData],
-  fps : Float
+  frame_datas : ArrayView[FrameData],
+  fps : Float,
+  opt~ : AnimOption = AnimOption::new()
 ) -> Bool {
-  let sp_ptr = get_global_buf_ptr()
+  let ptr = get_global_buf_ptr()
   let mut offset = 0
-  for sp in sprites {
-    offset += sp.writeTo(sp_ptr + offset)
+  for data in frame_datas {
+    offset += data.writeTo(ptr + offset)
   }
   let name_ptr = str2ptr(name)
   add_simple_animation_ffi(
     self.inner,
     name_ptr,
     name.length(),
-    sp_ptr,
-    sprites.length(),
+    ptr,
+    frame_datas.length(),
     fps,
+    opt.wait_time,
+    opt.is_loop,
+    opt.reverse,
   )
 }
 
@@ -135,22 +142,22 @@ fn animation_system_get_current_frame_ffi(
   as_ptr : UInt64,
   name_ptr : Int,
   name_len : Int,
-  sprite_ptr : Int
+  frame_data_ptr : Int
 ) -> Bool = "lunar" "animation_system_get_current_frame"
 
 ///|
 pub fn AnimationSystem::get_current_frame(
   self : AnimationSystem,
   name : String
-) -> Sprite? {
-  let sprite_ptr = get_global_buf_ptr()
+) -> FrameData? {
+  let frame_data_ptr = get_global_buf_ptr()
   if animation_system_get_current_frame_ffi(
       self.inner,
       str2ptr(name),
       name.length(),
-      sprite_ptr,
+      frame_data_ptr,
     ) {
-    Some(Sprite::readFrom(sprite_ptr))
+    Some(FrameData::readFrom(frame_data_ptr))
   } else {
     None
   }
@@ -168,9 +175,33 @@ pub fn AnimationSystem::update(
 }
 
 ///|
+fn connect_signal_ffi(as_ptr : UInt64) -> Bool = "lunar" "connect_signal"
+
+///|
+pub fn AnimationSystem::connect_signal(self : AnimationSystem) -> Bool {
+  connect_signal_ffi(self.inner)
+}
+
+///|
 pub(all) enum FrameData {
   Sprite(Sprite)
   DrawCmd(DrawCmd)
+}
+
+///|
+pub fn FrameData::get_sprite(self : FrameData) -> Sprite? {
+  match self {
+    Sprite(sp) => Some(sp)
+    DrawCmd(_) => None
+  }
+}
+
+///|
+pub fn FrameData::get_cmd(self : FrameData) -> DrawCmd? {
+  match self {
+    Sprite(_) => None
+    DrawCmd(cmd) => Some(cmd)
+  }
 }
 
 ///|
@@ -190,6 +221,21 @@ pub fn FrameData::writeTo(self : FrameData, init_ptr : Int) -> Int {
   }
   store8(init_ptr, enum_tag)
   ptr - init_ptr
+}
+
+///|
+pub fn FrameData::readFrom(init_ptr : Int) -> FrameData {
+  let mut ptr = init_ptr
+  let enum_tag = load8_u(ptr)
+  ptr += 1
+  match enum_tag {
+    1 => Sprite(Sprite::readFrom(ptr))
+    2 => DrawCmd(DrawCmd::readFrom(ptr))
+    _ => {
+      log("Error FrameData tag: \{enum_tag}")
+      panic()
+    }
+  }
 }
 
 ///|
@@ -218,6 +264,13 @@ pub fn DrawCmd::writeTo(self : DrawCmd, init_ptr : Int) -> Int {
 }
 
 ///|
+pub fn DrawCmd::readFrom(init_ptr : Int) -> DrawCmd {
+  let (cmd, cmd_size) = Cmd::readFrom(init_ptr)
+  let depth = loadf32(init_ptr + cmd_size)
+  { cmd, depth }
+}
+
+///|
 pub(all) enum Cmd {
   Circle(CircleCmd)
   // FIXME: add more commands
@@ -239,6 +292,20 @@ pub fn Cmd::writeTo(self : Cmd, init_ptr : Int) -> Int {
 }
 
 ///|
+pub fn Cmd::readFrom(init_ptr : Int) -> (Cmd, Int) {
+  let mut ptr = init_ptr
+  let enum_tag = load8_u(ptr)
+  ptr += 1
+  match enum_tag {
+    10 => {
+      let (circle, size) = CircleCmd::readFrom(ptr)
+      (Circle(circle), size + 1)
+    }
+    _ => ...
+  }
+}
+
+///|
 pub(all) struct CircleCmd {
   p : Point
   radius : Float
@@ -249,11 +316,11 @@ pub(all) struct CircleCmd {
 
 ///|
 pub fn CircleCmd::new(
-  p : Point,
-  radius : Float,
-  color : Color,
-  thickness : Float,
-  num_segments : UInt
+  p~ : Point,
+  radius~ : Float,
+  color~ : Color,
+  thickness~ : Float,
+  num_segments~ : UInt
 ) -> CircleCmd {
   let color = color.to_internal()
   { p, radius, color, thickness, num_segments }
@@ -272,4 +339,36 @@ pub fn CircleCmd::writeTo(self : CircleCmd, init_ptr : Int) -> Int {
   store32_u(ptr, self.num_segments)
   ptr += 4
   ptr - init_ptr
+}
+
+///|
+pub fn CircleCmd::readFrom(init_ptr : Int) -> (CircleCmd, Int) {
+  let mut ptr = init_ptr
+  let p = Point::readFrom(ptr)
+  ptr += 8
+  let radius = loadf32(ptr)
+  ptr += 4
+  let color = load32_u(ptr)
+  ptr += 4
+  let thickness = loadf32(ptr)
+  ptr += 4
+  let num_segments = load32_u(ptr)
+  ptr += 4
+  ({ p, radius, color, thickness, num_segments }, ptr - init_ptr)
+}
+
+///|
+pub struct AnimOption {
+  wait_time : Float
+  is_loop : Bool
+  reverse : Bool
+}
+
+///|
+pub fn AnimOption::new(
+  wait_time~ : Float = 0.0,
+  is_loop~ : Bool = false,
+  reverse~ : Bool = false
+) -> AnimOption {
+  { wait_time, is_loop, reverse }
 }

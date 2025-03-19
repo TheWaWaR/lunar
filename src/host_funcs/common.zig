@@ -116,17 +116,51 @@ pub fn readColorArg(arg: *const Value) jok.Color {
     return jok.Color.rgba(r, g, b, a);
 }
 
+pub fn readFrameDataArg(arg: *const Value) FrameData {
+    var data: FrameData = undefined;
+    _ = readFrameDataPtr(arg.toGuestPtr(), &data);
+    return data;
+}
+
 pub fn readFrameDataPtr(init_guest_ptr: usize, data: *FrameData) usize {
     var guest_ptr = init_guest_ptr;
     var enum_tag: u8 = 0;
     guest_ptr += readBytePtr(guest_ptr, &enum_tag);
     switch (enum_tag) {
         // sp: Sprite,
-        1 => guest_ptr += readSpritePtr(guest_ptr, &data.sp),
+        1 => {
+            data.* = .{ .sp = undefined };
+            guest_ptr += readSpritePtr(guest_ptr, &data.sp);
+        },
         // dcmd: internal.DrawCmd,
-        2 => guest_ptr += readDrawCmdPtr(guest_ptr, &data.dcmd),
+        2 => {
+            data.* = .{ .dcmd = undefined };
+            guest_ptr += readDrawCmdPtr(guest_ptr, &data.dcmd);
+        },
         else => unreachable,
     }
+    return guest_ptr - init_guest_ptr;
+}
+
+pub fn writeFrameDataArg(arg: *const Value, data: *const FrameData) usize {
+    return writeFrameDataPtr(arg.toGuestPtr(), data);
+}
+
+pub fn writeFrameDataPtr(init_guest_ptr: usize, data: *const FrameData) usize {
+    const mem_data = get_app().guest_mem_data();
+    var guest_ptr = init_guest_ptr + 1;
+    var enum_tag: u8 = 0;
+    switch (data.*) {
+        .sp => |sp| {
+            enum_tag = 1;
+            guest_ptr += writeSpritePtr(guest_ptr, &sp);
+        },
+        .dcmd => |dcmd| {
+            enum_tag = 2;
+            guest_ptr += writeDrawCmdPtr(guest_ptr, &dcmd);
+        },
+    }
+    mem_data[init_guest_ptr] = enum_tag;
     return guest_ptr - init_guest_ptr;
 }
 
@@ -177,6 +211,7 @@ pub fn readDrawCmdPtr(init_guest_ptr: usize, cmd: *DrawCmd) usize {
         9 => unreachable,
         // circle: CircleCmd,
         10 => {
+            cmd.cmd = .{ .circle = undefined };
             inline for (.{
                 &cmd.cmd.circle.p.x,
                 &cmd.cmd.circle.p.x,
@@ -214,6 +249,31 @@ pub fn readDrawCmdPtr(init_guest_ptr: usize, cmd: *DrawCmd) usize {
     return guest_ptr - init_guest_ptr;
 }
 
+pub fn writeDrawCmdPtr(init_guest_ptr: usize, cmd: *const DrawCmd) usize {
+    const mem_data = get_app().guest_mem_data();
+    var guest_ptr = init_guest_ptr + 1;
+    var enum_tag: u8 = 0;
+    switch (cmd.cmd) {
+        .circle => {
+            enum_tag = 10;
+            inline for (.{
+                cmd.cmd.circle.p.x,
+                cmd.cmd.circle.p.x,
+                cmd.cmd.circle.radius,
+                cmd.cmd.circle.color,
+                cmd.cmd.circle.thickness,
+                cmd.cmd.circle.num_segments,
+            }) |value| {
+                guest_ptr += writeNumber(guest_ptr, value);
+            }
+        },
+        else => @panic("TODO"),
+    }
+    mem_data[init_guest_ptr] = enum_tag;
+    guest_ptr += writeNumber(guest_ptr, cmd.depth);
+    return guest_ptr - init_guest_ptr;
+}
+
 pub fn readPtrPtr(init_guest_ptr: usize, host_ptr: *(*anyopaque)) usize {
     var guest_ptr = init_guest_ptr;
     var ptr_int: usize = 0;
@@ -242,9 +302,12 @@ pub fn readSpritesArg(arg: *const Value, items: []Sprite) void {
     }
 }
 
-pub fn writeSpriteArg(arg: *const Value, sp: Sprite) usize {
-    const guest_ptr = arg.toGuestPtr();
-    var size: usize = 0;
+pub fn writeSpriteArg(arg: *const Value, sp: *const Sprite) usize {
+    return writeSpritePtr(arg.toGuestPtr(), sp);
+}
+
+pub fn writeSpritePtr(init_guest_ptr: usize, sp: *const Sprite) usize {
+    var guest_ptr = init_guest_ptr;
     inline for (.{
         sp.width,
         sp.height,
@@ -254,9 +317,9 @@ pub fn writeSpriteArg(arg: *const Value, sp: Sprite) usize {
         sp.uv1.y,
         @intFromPtr(sp.tex.ptr),
     }) |val| {
-        size += writeNumber(guest_ptr + size, val);
+        guest_ptr += writeNumber(guest_ptr, val);
     }
-    return size;
+    return guest_ptr - init_guest_ptr;
 }
 
 pub fn readNumberArg(comptime T: type, arg: *const Value, ptr: *T) usize {

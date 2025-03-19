@@ -38,6 +38,6 @@ fn getSubSprite(args: []const Value, _: []Value) ?Ptr {
     const width = args[3].toNumber(f32);
     const height = args[4].toNumber(f32);
     const sub_sp = sp.getSubSprite(offset_x, offset_y, width, height);
-    _ = c.writeSpriteArg(&args[5], sub_sp);
+    _ = c.writeSpriteArg(&args[5], &sub_sp);
     return null;
 }
