@@ -6,9 +6,12 @@ const get_app = @import("../main.zig").get_app;
 const assert = std.debug.assert;
 const Allocator = std.mem.Allocator;
 const Value = w.Value;
+const Mat = jok.zmath.Mat;
 const Sprite = jok.j2d.Sprite;
 const SpriteOption = jok.j2d.Batch.SpriteOption;
-const Mat = jok.zmath.Mat;
+const AnimationSystem = jok.j2d.AnimationSystem;
+const DrawCmd = jok.j2d.DrawCmd;
+const FrameData = AnimationSystem.Frame.Data;
 
 pub const FuncDef = struct {
     []const u8,
@@ -76,6 +79,11 @@ pub fn readFromUtf16Str(
     return str;
 }
 
+pub fn readBytePtr(guest_ptr: usize, byte: *u8) usize {
+    byte.* = get_app().guest_mem_data()[guest_ptr];
+    return 1;
+}
+
 pub fn readBytes(args: []const Value) []const u8 {
     const ptr = args[0].toGuestPtr();
     const len: usize = @intCast(args[1].of.i32);
@@ -108,10 +116,110 @@ pub fn readColorArg(arg: *const Value) jok.Color {
     return jok.Color.rgba(r, g, b, a);
 }
 
+pub fn readFrameDataPtr(init_guest_ptr: usize, data: *FrameData) usize {
+    var guest_ptr = init_guest_ptr;
+    var enum_tag: u8 = 0;
+    guest_ptr += readBytePtr(guest_ptr, &enum_tag);
+    switch (enum_tag) {
+        // sp: Sprite,
+        1 => guest_ptr += readSpritePtr(guest_ptr, &data.sp),
+        // dcmd: internal.DrawCmd,
+        2 => guest_ptr += readDrawCmdPtr(guest_ptr, &data.dcmd),
+        else => unreachable,
+    }
+    return init_guest_ptr - guest_ptr;
+}
+
 pub fn readSpriteArg(arg: *const Value) Sprite {
-    var sprites: [1]Sprite = undefined;
-    readSpritesArg(arg, sprites[0..]);
-    return sprites[0];
+    var sprite: Sprite = undefined;
+    _ = readSpritePtr(arg.toGuestPtr(), &sprite);
+    return sprite;
+}
+
+pub fn readSpritePtr(init_guest_ptr: usize, sprite: *Sprite) usize {
+    var guest_ptr = init_guest_ptr;
+    inline for (.{
+        &sprite.width,
+        &sprite.height,
+        &sprite.uv0.x,
+        &sprite.uv0.y,
+        &sprite.uv1.x,
+        &sprite.uv1.y,
+    }) |host_ptr| {
+        guest_ptr += readNumber(f32, guest_ptr, host_ptr);
+    }
+    guest_ptr += readPtrPtr(guest_ptr, &sprite.tex.ptr);
+    return guest_ptr - init_guest_ptr;
+}
+
+pub fn readDrawCmdPtr(init_guest_ptr: usize, cmd: *DrawCmd) usize {
+    var guest_ptr = init_guest_ptr;
+    var enum_tag: u8 = 0;
+    guest_ptr += readBytePtr(guest_ptr, &enum_tag);
+    switch (enum_tag) {
+        // quad_image: QuadImageCmd
+        1 => unreachable,
+        // image_rounded: ImageRoundedCmd,
+        2 => unreachable,
+        // line: LineCmd,
+        3 => unreachable,
+        // rect_rounded: RectRoundedCmd,
+        4 => unreachable,
+        // rect_rounded_fill: RectFillRoundedCmd,
+        5 => unreachable,
+        // quad: QuadCmd,
+        6 => unreachable,
+        // quad_fill: QuadFillCmd,
+        7 => unreachable,
+        // triangle: TriangleCmd,
+        8 => unreachable,
+        // triangle_fill: TriangleFillCmd,
+        9 => unreachable,
+        // circle: CircleCmd,
+        10 => {
+            inline for (.{
+                &cmd.cmd.circle.p.x,
+                &cmd.cmd.circle.p.x,
+                &cmd.cmd.circle.radius,
+                &cmd.cmd.circle.color,
+                &cmd.cmd.circle.thickness,
+                &cmd.cmd.circle.num_segments,
+            }) |host_ptr| {
+                const ptr_ty = @TypeOf(host_ptr);
+                const ty = @typeInfo(ptr_ty).pointer.child;
+                guest_ptr += readNumber(ty, guest_ptr, host_ptr);
+            }
+        },
+        // circle_fill: CircleFillCmd,
+        11 => unreachable,
+        // ngon: NgonCmd,
+        12 => unreachable,
+        // ngon_fill: NgonFillCmd,
+        13 => unreachable,
+        // convex_polygon: ConvexPolyCmd,
+        14 => unreachable,
+        // convex_polygon_fill: ConvexPolyFillCmd,
+        15 => unreachable,
+        // bezier_cubic: BezierCubicCmd,
+        16 => unreachable,
+        // bezier_quadratic: BezierQuadraticCmd,
+        17 => unreachable,
+        // polyline: PolylineCmd,
+        18 => unreachable,
+        // path: PathCmd,
+        19 => unreachable,
+        else => unreachable,
+    }
+    guest_ptr += readNumber(f32, guest_ptr, &cmd.depth);
+    return guest_ptr - init_guest_ptr;
+}
+
+pub fn readPtrPtr(init_guest_ptr: usize, host_ptr: *(*anyopaque)) usize {
+    var guest_ptr = init_guest_ptr;
+    var ptr_int: usize = 0;
+    guest_ptr += readNumber(usize, guest_ptr, &ptr_int);
+    host_ptr.* = @ptrFromInt(ptr_int);
+    return @sizeOf(usize);
 }
 
 pub fn readSpritesArg(arg: *const Value, items: []Sprite) void {
@@ -180,8 +288,8 @@ pub fn writeNumber(guest_ptr: usize, val: anytype) usize {
     return size;
 }
 
-pub fn writeMat(_guest_ptr: usize, mat: Mat) void {
-    var guest_ptr = _guest_ptr;
+pub fn writeMat(init_guest_ptr: usize, mat: Mat) void {
+    var guest_ptr = init_guest_ptr;
     for (mat) |item| {
         for (0..4) |idx| {
             guest_ptr += writeNumber(guest_ptr, item[idx]);
@@ -189,8 +297,8 @@ pub fn writeMat(_guest_ptr: usize, mat: Mat) void {
     }
 }
 
-pub fn readMat(_guest_ptr: usize) Mat {
-    var guest_ptr = _guest_ptr;
+pub fn readMat(init_guest_ptr: usize) Mat {
+    var guest_ptr = init_guest_ptr;
     var mat: Mat = undefined;
     for (0..4) |mat_idx| {
         var arr: [4]f32 = undefined;
@@ -210,7 +318,7 @@ pub fn readSpriteOption(_guest_ptr: usize) SpriteOption {
     const mem_data = get_app().guest_mem_data();
     const flags = mem_data[_guest_ptr];
     var guest_ptr = _guest_ptr + 1;
-    var opt: SpriteOption = .{ .pos = .{.x = 0, .y = 0} };
+    var opt: SpriteOption = .{ .pos = .{ .x = 0, .y = 0 } };
     guest_ptr += readNumber(f32, guest_ptr, &opt.pos.x);
     guest_ptr += readNumber(f32, guest_ptr, &opt.pos.y);
     if (flags & (1 << 1) > 0) {

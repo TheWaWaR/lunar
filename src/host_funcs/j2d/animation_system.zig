@@ -97,14 +97,11 @@ pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
     const as = args[0].toHostPtr(j2d.AnimationSystem);
     const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
     const sp_count: usize = @intCast(args[4].toNumber(i32));
-    const sp_items: []Sprite = app.ctx.allocator().alloc(Sprite, sp_count) catch @panic("OOM");
-    defer app.ctx.allocator().free(sp_items);
     const frames: []Frame.Data = app.ctx.allocator().alloc(Frame.Data, sp_count) catch @panic("OOM");
     defer app.ctx.allocator().free(frames);
-    c.readSpritesArg(&args[3], sp_items);
+    var guest_ptr = args[3].toGuestPtr();
     for (0..sp_count) |idx| {
-        var frame = &frames[idx];
-        frame.sp = sp_items[idx];
+        guest_ptr += c.readFrameDataPtr(guest_ptr, &frames[idx]);
     }
     const fps = args[5].toNumber(f32);
     as.addSimple(name, frames, fps, .{}) catch |err| {

@@ -1,4 +1,7 @@
 ///|
+typealias FrameData = @lunar.FrameData
+
+///|
 let sheet : Ref[@lunar.SpriteSheet] = { val: @lunar.SpriteSheet::new(0) }
 
 ///|
@@ -34,30 +37,48 @@ pub fn lunar_init() -> Unit {
     size.height,
   ).unwrap()
   let player = sheet.val.get_sprite_by_name("player").unwrap()
-  let _success = anim_sys.val.add_simple_animation(
+  let _success = anim_sys.val.add_simple(
     "player_left_right",
     [
-      player.get_sub_sprite((4.0 * 16.0).to_float(), 0, 16, 16),
-      player.get_sub_sprite((5.0 * 16.0).to_float(), 0, 16, 16),
-      player.get_sub_sprite((3.0 * 16.0).to_float(), 0, 16, 16),
+      FrameData::Sprite(
+        player.get_sub_sprite((4.0 * 16.0).to_float(), 0, 16, 16),
+      ),
+      FrameData::Sprite(
+        player.get_sub_sprite((5.0 * 16.0).to_float(), 0, 16, 16),
+      ),
+      FrameData::Sprite(
+        player.get_sub_sprite((3.0 * 16.0).to_float(), 0, 16, 16),
+      ),
     ][:],
     6,
   )
-  let _success = anim_sys.val.add_simple_animation(
+  let _success = anim_sys.val.add_simple(
     "player_up",
     [
-      player.get_sub_sprite((7.0 * 16.0).to_float(), 0, 16, 16),
-      player.get_sub_sprite((8.0 * 16.0).to_float(), 0, 16, 16),
-      player.get_sub_sprite((6.0 * 16.0).to_float(), 0, 16, 16),
+      FrameData::Sprite(
+        player.get_sub_sprite((7.0 * 16.0).to_float(), 0, 16, 16),
+      ),
+      FrameData::Sprite(
+        player.get_sub_sprite((8.0 * 16.0).to_float(), 0, 16, 16),
+      ),
+      FrameData::Sprite(
+        player.get_sub_sprite((6.0 * 16.0).to_float(), 0, 16, 16),
+      ),
     ][:],
     6,
   )
-  let _success = anim_sys.val.add_simple_animation(
+  let _success = anim_sys.val.add_simple(
     "player_down",
     [
-      player.get_sub_sprite((1.0 * 16.0).to_float(), 0, 16, 16),
-      player.get_sub_sprite((2.0 * 16.0).to_float(), 0, 16, 16),
-      player.get_sub_sprite((0.0 * 16.0).to_float(), 0, 16, 16),
+      FrameData::Sprite(
+        player.get_sub_sprite((1.0 * 16.0).to_float(), 0, 16, 16),
+      ),
+      FrameData::Sprite(
+        player.get_sub_sprite((2.0 * 16.0).to_float(), 0, 16, 16),
+      ),
+      FrameData::Sprite(
+        player.get_sub_sprite((0.0 * 16.0).to_float(), 0, 16, 16),
+      ),
     ][:],
     6,
   )
@@ -77,7 +98,6 @@ pub fn lunar_update() -> Unit {
     @lunar.kill()
     return
   }
-
   let mut force_replay = false
   let mut pos_x = pos.val.x
   let mut pos_y = pos.val.y
@@ -118,7 +138,6 @@ pub fn lunar_update() -> Unit {
 pub fn lunar_draw() -> Unit {
   @lunar.get_renderer().clear(@lunar.Color::rgb(77, 77, 77))
   @lunar.display_stats()
-
   let batch = @lunar.Batch2D::new()
   let _success = batch.sprite(
     sheet.val.get_sprite_by_name("player").unwrap(),

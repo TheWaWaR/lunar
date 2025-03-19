@@ -33,10 +33,10 @@ fn add_simple_animation_ffi(
 ) -> Bool = "lunar" "add_simple_animation"
 
 ///|
-pub fn AnimationSystem::add_simple_animation(
+pub fn AnimationSystem::add_simple(
   self : AnimationSystem,
   name : String,
-  sprites : ArrayView[Sprite],
+  sprites : ArrayView[FrameData],
   fps : Float
 ) -> Bool {
   let sp_ptr = get_global_buf_ptr()
@@ -165,4 +165,89 @@ pub fn AnimationSystem::update(
   delta_tick : Float
 ) -> Unit {
   animation_system_update_ffi(self.inner, delta_tick)
+}
+
+///|
+pub(all) enum FrameData {
+  Sprite(Sprite)
+  DrawCmd(DrawCmd)
+}
+
+///|
+pub fn FrameData::writeTo(self : FrameData, init_ptr : Int) -> Int {
+  let mut ptr = init_ptr
+  ptr += 1
+  let mut enum_tag : Int = 0
+  match self {
+    Sprite(sp) => {
+      enum_tag = 1
+      ptr += sp.writeTo(ptr)
+    }
+    DrawCmd(dcmd) => {
+      enum_tag = 2
+      ptr += dcmd.writeTo(ptr)
+    }
+  }
+  store8(init_ptr, enum_tag)
+  init_ptr - ptr
+}
+
+///|
+pub(all) struct DrawCmd {
+  cmd : Cmd
+  depth : Float
+}
+
+///|
+pub fn DrawCmd::writeTo(self : DrawCmd, init_ptr : Int) -> Int {
+  let mut ptr = init_ptr
+  ptr += self.cmd.writeTo(ptr)
+  storef32(ptr, self.depth)
+  ptr += 4
+  ptr - init_ptr
+}
+
+///|
+pub(all) enum Cmd {
+  Circle(CircleCmd)
+  // FIXME: add more commands
+}
+
+///|
+pub fn Cmd::writeTo(self : Cmd, init_ptr : Int) -> Int {
+  let mut ptr = init_ptr
+  ptr += 1
+  let mut enum_tag : Int = 0
+  match self {
+    Circle(cmd) => {
+      enum_tag = 10
+      ptr += cmd.writeTo(ptr)
+    }
+  }
+  store8(init_ptr, enum_tag)
+  ptr - init_ptr
+}
+
+///|
+pub(all) struct CircleCmd {
+  p : Point
+  radius : Float
+  color : UInt
+  thickness : Float
+  num_segments : UInt
+}
+
+///|
+pub fn CircleCmd::writeTo(self : CircleCmd, init_ptr : Int) -> Int {
+  let mut ptr = init_ptr
+  ptr += self.p.writeTo(ptr)
+  storef32(ptr, self.radius)
+  ptr += 4
+  store32_u(ptr, self.color)
+  ptr += 4
+  storef32(ptr, self.thickness)
+  ptr += 4
+  store32_u(ptr, self.num_segments)
+  ptr += 4
+  ptr - init_ptr
 }
