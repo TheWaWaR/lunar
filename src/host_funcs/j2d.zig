@@ -78,7 +78,7 @@ fn batchPopTransform(args: []const Value, _: []Value) ?Ptr {
 // ) = "lunar" "batch_set_transform_2d"
 fn batchSetTransform(args: []const Value, _: []Value) ?Ptr {
     const batch = args[0].toHostPtr(Batch);
-    const mat = c.readMat(args[1].toGuestPtr());
+    const mat = c.readMatArg(&args[1]);
     batch.trs = .{ .mat = mat };
     return null;
 }

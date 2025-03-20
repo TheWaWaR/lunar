@@ -79,11 +79,6 @@ pub fn readFromUtf16Str(
     return str;
 }
 
-pub fn readBytePtr(guest_ptr: usize, byte: *u8) usize {
-    byte.* = get_app().guest_mem_data()[guest_ptr];
-    return 1;
-}
-
 pub fn readBytes(args: []const Value) []const u8 {
     const ptr = args[0].toGuestPtr();
     const len: usize = @intCast(args[1].of.i32);
@@ -92,86 +87,99 @@ pub fn readBytes(args: []const Value) []const u8 {
 }
 
 pub fn readPointArg(arg: *const Value) jok.Point {
-    var guest_ptr = arg.toGuestPtr();
-    var p: jok.Point = undefined;
-    guest_ptr += readNumber(f32, guest_ptr, &p.x);
-    guest_ptr += readNumber(f32, guest_ptr, &p.y);
-    return p;
+    const mem = get_app().guest_mem_data();
+    return readPointPtr(mem, arg.toGuestPtr())[0];
 }
 
-pub fn writePointArg(arg: *const Value, point: jok.Point) usize {
-    const guest_ptr = arg.toGuestPtr();
-    _ = writeNumber(guest_ptr + 0, point.x);
-    _ = writeNumber(guest_ptr + 4, point.y);
-    return 8;
+pub fn readPointPtr(mem: [*]u8, init_guest_ptr: usize) struct { jok.Point, usize } {
+    var guest_ptr = init_guest_ptr;
+    var p: jok.Point = undefined;
+    guest_ptr = readNumber(f32, mem, guest_ptr, &p.x);
+    guest_ptr = readNumber(f32, mem, guest_ptr, &p.y);
+    return .{ p, guest_ptr };
+}
+
+pub fn writePointArg(arg: *const Value, point: jok.Point) void {
+    const mem = get_app().guest_mem_data();
+    _ = writePointPtr(mem, arg.toGuestPtr(), point);
+}
+
+pub fn writePointPtr(mem: [*]u8, init_guest_ptr: usize, point: jok.Point) usize {
+    var guest_ptr = init_guest_ptr;
+    guest_ptr = writeNumber(mem, guest_ptr, point.x);
+    guest_ptr = writeNumber(mem, guest_ptr, point.y);
+    return guest_ptr;
 }
 
 pub fn readColorArg(arg: *const Value) jok.Color {
-    const guest_ptr = arg.toGuestPtr();
-    const mem_data = get_app().guest_mem_data();
-    const r: u8 = mem_data[guest_ptr + 0];
-    const g: u8 = mem_data[guest_ptr + 1];
-    const b: u8 = mem_data[guest_ptr + 2];
-    const a: u8 = mem_data[guest_ptr + 3];
-    return jok.Color.rgba(r, g, b, a);
+    const mem = get_app().guest_mem_data();
+    return readColorPtr(mem, arg.toGuestPtr())[0];
+}
+
+pub fn readColorPtr(mem: [*]u8, guest_ptr: usize) struct { jok.Color, usize } {
+    const r: u8 = mem[guest_ptr + 0];
+    const g: u8 = mem[guest_ptr + 1];
+    const b: u8 = mem[guest_ptr + 2];
+    const a: u8 = mem[guest_ptr + 3];
+    return .{ jok.Color.rgba(r, g, b, a), guest_ptr + 4 };
 }
 
 pub fn readFrameDataArg(arg: *const Value) FrameData {
-    var data: FrameData = undefined;
-    _ = readFrameDataPtr(arg.toGuestPtr(), &data);
-    return data;
+    const mem = get_app().guest_mem_data();
+    return readFrameDataPtr(mem, arg.toGuestPtr())[0];
 }
 
-pub fn readFrameDataPtr(init_guest_ptr: usize, data: *FrameData) usize {
+pub fn readFrameDataPtr(mem: [*]u8, init_guest_ptr: usize) struct { FrameData, usize } {
     var guest_ptr = init_guest_ptr;
-    var enum_tag: u8 = 0;
-    guest_ptr += readBytePtr(guest_ptr, &enum_tag);
+    const enum_tag = mem[guest_ptr];
+    guest_ptr += 1;
+    var data: FrameData = undefined;
     switch (enum_tag) {
         // sp: Sprite,
         1 => {
-            data.* = .{ .sp = undefined };
-            guest_ptr += readSpritePtr(guest_ptr, &data.sp);
+            const sprite, guest_ptr = readSpritePtr(mem, guest_ptr);
+            data = .{ .sp = sprite };
         },
         // dcmd: internal.DrawCmd,
         2 => {
-            data.* = .{ .dcmd = undefined };
-            guest_ptr += readDrawCmdPtr(guest_ptr, &data.dcmd);
+            const dcmd, guest_ptr = readDrawCmdPtr(mem, guest_ptr);
+            data = .{ .dcmd = dcmd };
         },
         else => unreachable,
     }
-    return guest_ptr - init_guest_ptr;
+    return .{ data, guest_ptr };
 }
 
-pub fn writeFrameDataArg(arg: *const Value, data: *const FrameData) usize {
-    return writeFrameDataPtr(arg.toGuestPtr(), data);
+pub fn writeFrameDataArg(arg: *const Value, data: *const FrameData) void {
+    const mem = get_app().guest_mem_data();
+    _ = writeFrameDataPtr(mem, arg.toGuestPtr(), data);
 }
 
-pub fn writeFrameDataPtr(init_guest_ptr: usize, data: *const FrameData) usize {
-    const mem_data = get_app().guest_mem_data();
+pub fn writeFrameDataPtr(mem: [*]u8, init_guest_ptr: usize, data: *const FrameData) usize {
     var guest_ptr = init_guest_ptr + 1;
     var enum_tag: u8 = 0;
     switch (data.*) {
         .sp => |sp| {
             enum_tag = 1;
-            guest_ptr += writeSpritePtr(guest_ptr, &sp);
+            guest_ptr = writeSpritePtr(mem, guest_ptr, &sp);
         },
         .dcmd => |dcmd| {
             enum_tag = 2;
-            guest_ptr += writeDrawCmdPtr(guest_ptr, &dcmd);
+            guest_ptr = writeDrawCmdPtr(mem, guest_ptr, &dcmd);
         },
     }
-    mem_data[init_guest_ptr] = enum_tag;
-    return guest_ptr - init_guest_ptr;
+    mem[init_guest_ptr] = enum_tag;
+    return guest_ptr;
 }
 
 pub fn readSpriteArg(arg: *const Value) Sprite {
-    var sprite: Sprite = undefined;
-    _ = readSpritePtr(arg.toGuestPtr(), &sprite);
-    return sprite;
+    const mem = get_app().guest_mem_data();
+    return readSpritePtr(mem, arg.toGuestPtr())[0];
 }
 
-pub fn readSpritePtr(init_guest_ptr: usize, sprite: *Sprite) usize {
+pub fn readSpritePtr(mem: [*]u8, init_guest_ptr: usize) struct { Sprite, usize } {
     var guest_ptr = init_guest_ptr;
+    var sprite: Sprite = undefined;
     inline for (.{
         &sprite.width,
         &sprite.height,
@@ -180,16 +188,17 @@ pub fn readSpritePtr(init_guest_ptr: usize, sprite: *Sprite) usize {
         &sprite.uv1.x,
         &sprite.uv1.y,
     }) |host_ptr| {
-        guest_ptr += readNumber(f32, guest_ptr, host_ptr);
+        guest_ptr = readNumber(f32, mem, guest_ptr, host_ptr);
     }
-    guest_ptr += readPtrPtr(guest_ptr, &sprite.tex.ptr);
-    return guest_ptr - init_guest_ptr;
+    guest_ptr = readPtrPtr(mem, guest_ptr, &sprite.tex.ptr);
+    return .{ sprite, guest_ptr };
 }
 
-pub fn readDrawCmdPtr(init_guest_ptr: usize, cmd: *DrawCmd) usize {
+pub fn readDrawCmdPtr(mem: [*]u8, init_guest_ptr: usize) struct { DrawCmd, usize } {
     var guest_ptr = init_guest_ptr;
-    var enum_tag: u8 = 0;
-    guest_ptr += readBytePtr(guest_ptr, &enum_tag);
+    const enum_tag = mem[guest_ptr];
+    guest_ptr += 1;
+    var dcmd: DrawCmd = undefined;
     switch (enum_tag) {
         // quad_image: QuadImageCmd
         1 => unreachable,
@@ -211,18 +220,18 @@ pub fn readDrawCmdPtr(init_guest_ptr: usize, cmd: *DrawCmd) usize {
         9 => unreachable,
         // circle: CircleCmd,
         10 => {
-            cmd.cmd = .{ .circle = undefined };
+            dcmd.cmd = .{ .circle = undefined };
             inline for (.{
-                &cmd.cmd.circle.p.x,
-                &cmd.cmd.circle.p.x,
-                &cmd.cmd.circle.radius,
-                &cmd.cmd.circle.color,
-                &cmd.cmd.circle.thickness,
-                &cmd.cmd.circle.num_segments,
+                &dcmd.cmd.circle.p.x,
+                &dcmd.cmd.circle.p.x,
+                &dcmd.cmd.circle.radius,
+                &dcmd.cmd.circle.color,
+                &dcmd.cmd.circle.thickness,
+                &dcmd.cmd.circle.num_segments,
             }) |host_ptr| {
                 const ptr_ty = @TypeOf(host_ptr);
                 const ty = @typeInfo(ptr_ty).pointer.child;
-                guest_ptr += readNumber(ty, guest_ptr, host_ptr);
+                guest_ptr = readNumber(ty, mem, guest_ptr, host_ptr);
             }
         },
         // circle_fill: CircleFillCmd,
@@ -245,12 +254,11 @@ pub fn readDrawCmdPtr(init_guest_ptr: usize, cmd: *DrawCmd) usize {
         19 => unreachable,
         else => unreachable,
     }
-    guest_ptr += readNumber(f32, guest_ptr, &cmd.depth);
-    return guest_ptr - init_guest_ptr;
+    guest_ptr = readNumber(f32, mem, guest_ptr, &dcmd.depth);
+    return .{ dcmd, guest_ptr };
 }
 
-pub fn writeDrawCmdPtr(init_guest_ptr: usize, cmd: *const DrawCmd) usize {
-    const mem_data = get_app().guest_mem_data();
+pub fn writeDrawCmdPtr(mem: [*]u8, init_guest_ptr: usize, cmd: *const DrawCmd) usize {
     var guest_ptr = init_guest_ptr + 1;
     var enum_tag: u8 = 0;
     switch (cmd.cmd) {
@@ -264,22 +272,27 @@ pub fn writeDrawCmdPtr(init_guest_ptr: usize, cmd: *const DrawCmd) usize {
                 cmd.cmd.circle.thickness,
                 cmd.cmd.circle.num_segments,
             }) |value| {
-                guest_ptr += writeNumber(guest_ptr, value);
+                guest_ptr = writeNumber(mem, guest_ptr, value);
             }
         },
         else => @panic("TODO"),
     }
-    mem_data[init_guest_ptr] = enum_tag;
-    guest_ptr += writeNumber(guest_ptr, cmd.depth);
-    return guest_ptr - init_guest_ptr;
+    mem[init_guest_ptr] = enum_tag;
+    guest_ptr = writeNumber(mem, guest_ptr, cmd.depth);
+    return guest_ptr;
 }
 
-pub fn readPtrPtr(init_guest_ptr: usize, host_ptr: *(*anyopaque)) usize {
+pub fn readPtrArg(arg: *const Value, host_ptr: *(*anyopaque)) void {
+    const mem = get_app().guest_mem_data();
+    _ = readPointPtr(mem, arg.toGuestPtr(), host_ptr);
+}
+
+pub fn readPtrPtr(mem: [*]u8, init_guest_ptr: usize, host_ptr: *(*anyopaque)) usize {
     var guest_ptr = init_guest_ptr;
     var ptr_int: usize = 0;
-    guest_ptr += readNumber(usize, guest_ptr, &ptr_int);
+    guest_ptr = readNumber(usize, mem, guest_ptr, &ptr_int);
     host_ptr.* = @ptrFromInt(ptr_int);
-    return @sizeOf(usize);
+    return guest_ptr;
 }
 
 pub fn readSpritesArg(arg: *const Value, items: []Sprite) void {
@@ -294,19 +307,20 @@ pub fn readSpritesArg(arg: *const Value, items: []Sprite) void {
             &item.uv1.x,
             &item.uv1.y,
         }) |host_ptr| {
-            guest_ptr += readNumber(f32, guest_ptr, host_ptr);
+            guest_ptr = readNumber(f32, guest_ptr, host_ptr);
         }
         var ptr_int: usize = 0;
-        guest_ptr += readNumber(usize, guest_ptr, &ptr_int);
+        guest_ptr = readNumber(usize, guest_ptr, &ptr_int);
         item.tex.ptr = @ptrFromInt(ptr_int);
     }
 }
 
-pub fn writeSpriteArg(arg: *const Value, sp: *const Sprite) usize {
-    return writeSpritePtr(arg.toGuestPtr(), sp);
+pub fn writeSpriteArg(arg: *const Value, sp: *const Sprite) void {
+    const mem = get_app().guest_mem_data();
+    _ = writeSpritePtr(mem, arg.toGuestPtr(), sp);
 }
 
-pub fn writeSpritePtr(init_guest_ptr: usize, sp: *const Sprite) usize {
+pub fn writeSpritePtr(mem: [*]u8, init_guest_ptr: usize, sp: *const Sprite) usize {
     var guest_ptr = init_guest_ptr;
     inline for (.{
         sp.width,
@@ -317,103 +331,110 @@ pub fn writeSpritePtr(init_guest_ptr: usize, sp: *const Sprite) usize {
         sp.uv1.y,
         @intFromPtr(sp.tex.ptr),
     }) |val| {
-        guest_ptr += writeNumber(guest_ptr, val);
+        guest_ptr = writeNumber(mem, guest_ptr, val);
     }
-    return guest_ptr - init_guest_ptr;
+    return guest_ptr;
 }
 
 pub fn readNumberArg(comptime T: type, arg: *const Value, ptr: *T) usize {
-    return readNumber(T, arg.toGuestPtr(), ptr);
+    const mem = get_app().guest_mem_data();
+    return readNumber(T, mem, arg.toGuestPtr(), ptr);
 }
 
-pub fn readNumber(comptime T: type, guest_ptr: usize, ptr: *T) usize {
+pub fn readNumber(comptime T: type, mem: [*]u8, guest_ptr: usize, ptr: *T) usize {
     const size = @sizeOf(T);
     if (size != 4 and size != 8) {
         @compileError("Invalid size of type value");
     }
     const IT = if (size == 4) u32 else u64;
-    const mem_data = get_app().guest_mem_data();
-    const int_value = std.mem.readInt(IT, @ptrCast(mem_data[guest_ptr..]), .little);
+    const int_value = std.mem.readInt(IT, @ptrCast(mem[guest_ptr..]), .little);
     ptr.* = @bitCast(int_value);
-    return size;
+    return guest_ptr + size;
 }
 
-pub fn writeNumberArg(arg: *const Value, val: anytype) usize {
-    return writeNumber(arg.toGuestPtr(), val);
+pub fn writeNumberArg(arg: *const Value, val: anytype) void {
+    const mem = get_app().guest_mem_data();
+    _ = writeNumber(mem, arg.toGuestPtr(), val);
 }
 
-pub fn writeNumber(guest_ptr: usize, val: anytype) usize {
+pub fn writeNumber(mem: [*]u8, guest_ptr: usize, val: anytype) usize {
     const size = @sizeOf(@TypeOf(val));
     comptime assert(size == 4 or size == 8);
     const T = if (size == 4) u32 else u64;
-    const mem_data = get_app().guest_mem_data();
-    std.mem.writeInt(T, @ptrCast(mem_data[guest_ptr..]), @bitCast(val), .little);
-    return size;
+    std.mem.writeInt(T, @ptrCast(mem[guest_ptr..]), @bitCast(val), .little);
+    return guest_ptr + size;
 }
 
-pub fn writeMat(init_guest_ptr: usize, mat: Mat) void {
+pub fn writeMatArg(arg: *const Value, mat: Mat) void {
+    const mem = get_app().guest_mem_data();
+    _ = writeMatPtr(mem, arg.toGuestPtr(), mat);
+}
+
+pub fn writeMatPtr(mem: [*]u8, init_guest_ptr: usize, mat: Mat) usize {
     var guest_ptr = init_guest_ptr;
     for (mat) |item| {
         for (0..4) |idx| {
-            guest_ptr += writeNumber(guest_ptr, item[idx]);
+            guest_ptr = writeNumber(mem, guest_ptr, item[idx]);
         }
     }
+    return guest_ptr;
 }
 
-pub fn readMat(init_guest_ptr: usize) Mat {
+pub fn readMatArg(arg: *const Value) Mat {
+    const mem = get_app().guest_mem_data();
+    return readMatPtr(mem, arg.toGuestPtr())[0];
+}
+
+pub fn readMatPtr(mem: [*]u8, init_guest_ptr: usize) struct { Mat, usize } {
     var guest_ptr = init_guest_ptr;
     var mat: Mat = undefined;
     for (0..4) |mat_idx| {
         var arr: [4]f32 = undefined;
         for (0..4) |idx| {
-            guest_ptr += readNumber(f32, guest_ptr, &arr[idx]);
+            guest_ptr = readNumber(f32, mem, guest_ptr, &arr[idx]);
         }
         mat[mat_idx] = arr;
     }
-    return mat;
+    return .{ mat, guest_ptr };
 }
 
 pub fn readSpriteOptionArg(arg: *const Value) SpriteOption {
-    return readSpriteOption(arg.toGuestPtr());
+    const mem = get_app().guest_mem_data();
+    return readSpriteOption(mem, arg.toGuestPtr())[0];
 }
 
-pub fn readSpriteOption(_guest_ptr: usize) SpriteOption {
-    const mem_data = get_app().guest_mem_data();
-    const flags = mem_data[_guest_ptr];
-    var guest_ptr = _guest_ptr + 1;
+pub fn readSpriteOption(mem: [*]u8, init_guest_ptr: usize) struct { SpriteOption, usize } {
+    const flags = mem[init_guest_ptr];
+    var guest_ptr = init_guest_ptr + 1;
     var opt: SpriteOption = .{ .pos = .{ .x = 0, .y = 0 } };
-    guest_ptr += readNumber(f32, guest_ptr, &opt.pos.x);
-    guest_ptr += readNumber(f32, guest_ptr, &opt.pos.y);
+    guest_ptr = readNumber(f32, mem, guest_ptr, &opt.pos.x);
+    guest_ptr = readNumber(f32, mem, guest_ptr, &opt.pos.y);
     if (flags & (1 << 1) > 0) {
-        opt.tint_color.r = mem_data[guest_ptr + 0];
-        opt.tint_color.g = mem_data[guest_ptr + 1];
-        opt.tint_color.b = mem_data[guest_ptr + 2];
-        opt.tint_color.a = mem_data[guest_ptr + 3];
-        guest_ptr += 4;
+        opt.tint_color, guest_ptr = readColorPtr(mem, guest_ptr);
     }
     if (flags & (1 << 2) > 0) {
-        guest_ptr += readNumber(f32, guest_ptr, &opt.scale.x);
-        guest_ptr += readNumber(f32, guest_ptr, &opt.scale.y);
+        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.scale.x);
+        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.scale.y);
     }
     if (flags & (1 << 3) > 0) {
-        guest_ptr += readNumber(f32, guest_ptr, &opt.rotate_degree);
+        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.rotate_degree);
     }
     if (flags & (1 << 4) > 0) {
-        guest_ptr += readNumber(f32, guest_ptr, &opt.anchor_point.x);
-        guest_ptr += readNumber(f32, guest_ptr, &opt.anchor_point.y);
+        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.anchor_point.x);
+        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.anchor_point.y);
     }
     if (flags & (1 << 5) > 0) {
-        opt.flip_h = mem_data[guest_ptr] > 0;
+        opt.flip_h = mem[guest_ptr] > 0;
         guest_ptr += 1;
     }
     if (flags & (1 << 6) > 0) {
-        opt.flip_v = mem_data[guest_ptr] > 0;
+        opt.flip_v = mem[guest_ptr] > 0;
         guest_ptr += 1;
     }
     if (flags & (1 << 7) > 0) {
-        guest_ptr += readNumber(f32, guest_ptr, &opt.depth);
+        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.depth);
     }
-    return opt;
+    return .{ opt, guest_ptr };
 }
 
 pub fn writeBoolArg(arg: *const Value, val: bool) void {

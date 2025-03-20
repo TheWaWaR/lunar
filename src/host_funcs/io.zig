@@ -52,7 +52,7 @@ pub fn getKeyboardModifierState(_: []const Value, results: []Value) ?Ptr {
 // [moonbit] fn get_mouse_state_ffi(pos_ptr: Int) -> Byte = "lunar" "get_mouse_state"
 pub fn getMouseState(args: []const Value, results: []Value) ?Ptr {
     const state = jok.io.getMouseState();
-    _ = c.writePointArg(&args[0], state.pos);
+    c.writePointArg(&args[0], state.pos);
     results[0] = newi32(@intCast(state.buttons.storage));
     return null;
 }

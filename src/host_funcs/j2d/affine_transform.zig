@@ -26,7 +26,7 @@ pub const FUNCS = [_]c.FuncDef{
 
 // [moonbit] fn affine_transform_init_2d_ffi(mat_ptr: Int)  = "lunar" "affine_transform_init_2d"
 fn init(args: []const Value, _: []Value) ?Ptr {
-    c.writeMat(args[0].toGuestPtr(), j2d.AffineTransform.init().mat);
+    c.writeMatArg(&args[0], j2d.AffineTransform.init().mat);
     return null;
 }
 
@@ -34,9 +34,9 @@ fn init(args: []const Value, _: []Value) ?Ptr {
 //   mat_in_ptr: Int, pos_ptr: Int, mat_out_ptr: Int,
 // )  = "lunar" "affine_transform_translate_2d"
 fn translate(args: []const Value, _: []Value) ?Ptr {
-    const in = j2d.AffineTransform{ .mat = c.readMat(args[0].toGuestPtr()) };
+    const in = j2d.AffineTransform{ .mat = c.readMatArg(&args[0]) };
     const pos = c.readPointArg(&args[1]);
     const out = in.translate(pos);
-    c.writeMat(args[2].toGuestPtr(), out.mat);
+    c.writeMatArg(&args[2], out.mat);
     return null;
 }
