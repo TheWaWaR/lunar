@@ -89,11 +89,15 @@ pub fn lunar_init() -> Unit {
       DrawCmd::new(
         Circle(
           CircleCmd::new(
-            p = Point::new(0, 0),
-            radius = (100.0 - i.to_double() * 10.0).abs().to_float(),
-            color = Color::rgb((i * 50 % 255).to_byte(), (i * 50 % 255).to_byte(), 0),
-            num_segments = 50,
-            thickness = 6.0,
+            p=Point::new(0, 0),
+            radius=(100.0 - i.to_double() * 10.0).abs().to_float(),
+            color=Color::rgb(
+              (i * 50 % 255).to_byte(),
+              (i * 50 % 255).to_byte(),
+              0,
+            ),
+            num_segments=80,
+            thickness=6.0,
           ),
         ),
         0.5,
@@ -168,8 +172,7 @@ pub fn lunar_draw() -> Unit {
       scale=Some(Point::new(4, 4)),
     ),
   )
-  if anim_sys.val.is_stopped("player_circle_bg").unwrap() {
-    @lunar.log("push dcmd")
+  if not(anim_sys.val.is_stopped("player_circle_bg").unwrap()) {
     let _success = batch.push_transform()
     let trs = AffineTransform::init().translate(pos.val)
     batch.set_transform(trs)

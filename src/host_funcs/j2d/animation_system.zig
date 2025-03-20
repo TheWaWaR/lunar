@@ -102,9 +102,6 @@ pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
     var guest_ptr = args[3].toGuestPtr();
     for (0..sp_count) |idx| {
         guest_ptr += c.readFrameDataPtr(guest_ptr, &frames[idx]);
-        if (frames[idx] == .dcmd) {
-            std.log.info("frame[{}]: {any}", .{ idx, frames[idx].dcmd.cmd });
-        }
     }
     const fps = args[5].toNumber(f32);
     var opt = AnimationSystem.AnimOption{};
