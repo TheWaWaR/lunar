@@ -62,9 +62,9 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
 
-    const exe_unit_tests = b.addTest(.{
-        .root_module = exe.root_module,
-    });
+    const exe_unit_tests = jok.createTest(b, "test", "src/main.zig", target, optimize, .{});
+    exe_unit_tests.addObjectFile(wasmtime_dir.path(b, "lib/libwasmtime.a"));
+    exe_unit_tests.addIncludePath(wasmtime_dir.path(b, "include"));
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 

@@ -4,6 +4,7 @@ const w = @import("../wasmtime.zig");
 const get_app = @import("../main.zig").get_app;
 
 const assert = std.debug.assert;
+const expectEqual = std.testing.expectEqual;
 const Allocator = std.mem.Allocator;
 const Value = w.Value;
 const Mat = jok.zmath.Mat;
@@ -439,4 +440,15 @@ pub fn readSpriteOption(mem: [*]u8, init_guest_ptr: usize) struct { SpriteOption
 
 pub fn writeBoolArg(arg: *const Value, val: bool) void {
     get_app().guest_mem_data()[arg.toGuestPtr()] = @intFromBool(val);
+}
+
+test "serde point" {
+    var mem_data: [64]u8 = undefined;
+    const mem: [*]u8 = mem_data[0..].ptr;
+    const next1_ptr = writePointPtr(mem, 0, .{ .x = 33.3, .y = 44.4 });
+    try expectEqual(8, next1_ptr);
+    const p, const next2_ptr = readPointPtr(mem, 0);
+    try expectEqual(33.3, p.x);
+    try expectEqual(44.4, p.y);
+    try expectEqual(8, next2_ptr);
 }

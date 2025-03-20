@@ -171,3 +171,7 @@ fn setupWasmtime(ctx: *jok.Context, wasm_data: []const u8) !void {
     std.log.info("init wasmtime success", .{});
     app.wasmtime_init_success = true;
 }
+
+test {
+    std.testing.refAllDecls(@This());
+}

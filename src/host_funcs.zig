@@ -49,3 +49,7 @@ pub fn defineHostFuncs(linker: w.Linker) !void {
         );
     }
 }
+
+test {
+    std.testing.refAllDecls(@This());
+}
