@@ -125,6 +125,14 @@ pub fn readColorPtr(mem: [*]u8, guest_ptr: usize) struct { jok.Color, usize } {
     return .{ jok.Color.rgba(r, g, b, a), guest_ptr + 4 };
 }
 
+pub fn writeColorPtr(mem: [*]u8, guest_ptr: usize, color: jok.Color) usize {
+    mem[guest_ptr + 0] = color.r;
+    mem[guest_ptr + 1] = color.g;
+    mem[guest_ptr + 2] = color.b;
+    mem[guest_ptr + 3] = color.a;
+    return guest_ptr + 4;
+}
+
 pub fn readFrameDataArg(arg: *const Value) FrameData {
     const mem = get_app().guest_mem_data();
     return readFrameDataPtr(mem, arg.toGuestPtr())[0];
@@ -451,4 +459,17 @@ test "serde point" {
     try expectEqual(33.3, p.x);
     try expectEqual(44.4, p.y);
     try expectEqual(8, next2_ptr);
+}
+
+test "serde color" {
+    var mem_data: [64]u8 = undefined;
+    const mem: [*]u8 = mem_data[0..].ptr;
+    const next1_ptr = writeColorPtr(mem, 0, jok.Color.rgba(2, 5, 6, 7));
+    try expectEqual(4, next1_ptr);
+    const c, const next2_ptr = readColorPtr(mem, 0);
+    try expectEqual(2, c.r);
+    try expectEqual(5, c.g);
+    try expectEqual(6, c.b);
+    try expectEqual(7, c.a);
+    try expectEqual(4, next2_ptr);
 }
