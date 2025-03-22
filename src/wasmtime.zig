@@ -31,7 +31,7 @@ pub const WasmtimeError = error{
 pub const HostFn = *const fn (args: []const Value, results: []Value) ?Ptr;
 pub const host_fn_log: bool = false;
 
-fn type2kind(comptime T: type) WasmValKind {
+fn toValKind(comptime T: type) WasmValKind {
     switch (@typeInfo(T)) {
         .bool => return WasmValKind.i32,
         .pointer => return WasmValKind.i64,
@@ -63,7 +63,7 @@ fn type2kind(comptime T: type) WasmValKind {
         else => @compileError("Invalid host type"),
     }
 }
-fn type2param(comptime T: type, arg: *const Value) T {
+fn makeParam(comptime T: type, arg: *const Value) T {
     return switch (@typeInfo(T)) {
         .bool => arg.toBool(),
         .pointer => |p| arg.toHostPtr(p.child),
@@ -72,7 +72,7 @@ fn type2param(comptime T: type, arg: *const Value) T {
         else => @compileError("Invalid host param type"),
     };
 }
-fn type2result(comptime T: type, val: T) Value {
+fn makeResult(comptime T: type, val: T) Value {
     switch (@typeInfo(T)) {
         .bool => return Value.newI32(@intFromBool(val)),
         .pointer => return Value.newI64(@intCast(@intFromPtr(val))),
@@ -110,29 +110,35 @@ fn type2result(comptime T: type, val: T) Value {
 }
 
 pub const FuncInfo = struct {
-    []const u8,
-    CallbackFn,
-    []const WasmValKind,
-    []const WasmValKind,
+    name: []const u8,
+    callback: CallbackFn,
+    params: []const WasmValKind,
+    results: []const WasmValKind,
 };
 
 pub fn wrapHostFn(
     comptime name: []const u8,
     comptime host_fn: anytype,
 ) FuncInfo {
+    // Ensure align with C type: wasmtime_val_t
+    if (@sizeOf(Value) != 24) {
+        @compileError("The size of Value MUST be 24 bytes!");
+    }
+
     const fn_ty = switch (@typeInfo(@TypeOf(host_fn))) {
         .@"fn" => |vfn| vfn,
         else => @panic("Invalid host function type"),
     };
+    const return_type = fn_ty.return_type.?;
     comptime var var_fn_params: [fn_ty.params.len]WasmValKind = undefined;
     for (fn_ty.params, 0..) |param, idx| {
-        var_fn_params[idx] = type2kind(param.type.?);
+        var_fn_params[idx] = toValKind(param.type.?);
     }
     // https://ziggit.dev/t/comptime-mutable-memory-changes/3702#tldr-1
-    const fn_params: [fn_ty.params.len]WasmValKind = var_fn_params;
-    const fn_results: []const WasmValKind = switch (@typeInfo(fn_ty.return_type.?)) {
+    const fn_params = var_fn_params;
+    const fn_results: []const WasmValKind = switch (@typeInfo(return_type)) {
         .void => &.{},
-        else => &.{type2kind(fn_ty.return_type.?)},
+        else => &.{toValKind(return_type)},
     };
 
     const callback = struct {
@@ -155,11 +161,11 @@ pub fn wrapHostFn(
 
             var params: std.meta.ArgsTuple(@TypeOf(host_fn)) = undefined;
             inline for (fn_ty.params, 0..) |param, idx| {
-                params[idx] = type2param(param.type.?, &args[idx]);
+                params[idx] = makeParam(param.type.?, &args[idx]);
             }
             const ret = @call(.auto, host_fn, params);
             if (fn_results.len > 0) {
-                results[0] = type2result(fn_ty.return_type.?, ret);
+                results[0] = makeResult(return_type, ret);
             }
 
             if (host_fn_log) {
@@ -168,7 +174,12 @@ pub fn wrapHostFn(
             return null;
         }
     }.callback;
-    return .{ name, callback, fn_params[0..], fn_results };
+    return FuncInfo{
+        .name = name,
+        .callback = callback,
+        .params = fn_params[0..],
+        .results = fn_results,
+    };
 }
 
 fn print_err(err_ptr: Ptr) void {
@@ -260,11 +271,23 @@ pub const Linker = struct {
         module_name: []const u8,
         func_name: []const u8,
         cb: CallbackFn,
-        params: []const ValType,
-        results: []const ValType,
+        params: []const WasmValKind,
+        results: []const WasmValKind,
         data: *anyopaque,
     ) !void {
-        const ty = FuncType.new(params, results);
+        assert(params.len <= 16);
+        assert(results.len <= 1);
+
+        var params_buf: [16]ValType = undefined;
+        var results_buf: [1]ValType = undefined;
+        for (params, 0..) |param, idx| {
+            params_buf[idx] = ValType.new(param);
+        }
+        for (results, 0..) |result, idx| {
+            results_buf[idx] = ValType.new(result);
+        }
+
+        const ty = FuncType.new(params_buf[0..params.len], results_buf[0..results.len]);
         const err_ptr_opt = cdef.wasmtime_linker_define_func(
             self.ptr,
             module_name.ptr,
