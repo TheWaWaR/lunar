@@ -43,7 +43,7 @@ cd ../../..
 # ==== Run the game ====
 mkdir -p zig-out
 cd zig-out && ln -s ../assets assets && cd ..
-zig build run -- ./moonbit/examples/animation-2d/target/wasm/release/build/lunar.wasm
+zig build run -- ./moonbit/lunar/examples/animation-2d/target/wasm/release/build/animation-2d.wasm
 ```
 
 ## Demo
