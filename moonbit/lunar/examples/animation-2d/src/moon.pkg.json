@@ -2,7 +2,7 @@
   "targets": {
     "top.mbt": ["wasm"]
   },
-  "import": ["thewawar/lunar"],
+  "import": ["TheWaWaR/lunar"],
   "link": {
     "wasm": {
       "exports": [ 
