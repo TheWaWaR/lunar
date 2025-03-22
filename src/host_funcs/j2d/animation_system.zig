@@ -5,50 +5,31 @@ const c = @import("../common.zig");
 const get_app = @import("../../main.zig").get_app;
 
 const j2d = jok.j2d;
-const Value = w.Value;
-const Ptr = w.Ptr;
 const Sprite = j2d.Sprite;
 const Frame = j2d.AnimationSystem.Frame;
 const AnimationSystem = j2d.AnimationSystem;
 
-const I32 = w.WasmValKind.i32;
-const I64 = w.WasmValKind.i64;
-const F32 = w.WasmValKind.f32;
-const F64 = w.WasmValKind.f64;
-
-const newi32 = Value.newI32;
-const newi64 = Value.newI64;
-const newf32 = Value.newF32;
-const newf64 = Value.newF64;
-
-pub const FUNCS = [_]c.FuncDef{
-    .{ "animation_system_create", create, &.{ I64, I32 }, &.{I64} },
-    .{ "connect_signal", connectSignal, &.{I64}, &.{I32} },
-    .{ "add_simple_animation", addSimple, &.{ I64, I64, I32, I64, I32, F32, F32, I32, I32 }, &.{I32} },
-    .{ "animation_system_is_over", isOver, &.{ I64, I64, I32, I64 }, &.{I32} },
-    .{ "animation_system_is_stopped", isStopped, &.{ I64, I64, I32, I64 }, &.{I32} },
-    .{ "animation_system_reset", reset, &.{ I64, I64, I32 }, &.{I32} },
-    .{ "animation_system_set_stop", setStop, &.{ I64, I64, I32, I32 }, &.{I32} },
-    .{ "animation_system_get_current_frame", getCurrentFrame, &.{ I64, I64, I32, I64 }, &.{I32} },
-    .{ "animation_system_update", update, &.{ I64, F32 }, &.{} },
+pub const FUNCS = [_]w.FuncInfo{
+    w.wrapHostFn("animation_system_create", create),
+    w.wrapHostFn("connect_signal", connectSignal),
+    w.wrapHostFn("add_simple_animation", addSimple),
+    w.wrapHostFn("animation_system_is_over", isOver),
+    w.wrapHostFn("animation_system_is_stopped", isStopped),
+    w.wrapHostFn("animation_system_reset", reset),
+    w.wrapHostFn("animation_system_set_stop", setStop),
+    w.wrapHostFn("animation_system_get_current_frame", getCurrentFrame),
+    w.wrapHostFn("animation_system_update", update),
 };
 
-// [moonbit]
-// fn animation_system_create_ffi(
-//   name_ptr: Int, name_len: Int,
-// ) -> UInt64 = "lunar" "animation_system_create"
-pub fn create(args: []const Value, results: []Value) ?Ptr {
-    var as_ptr: i64 = 0;
-    defer results[0] = newi64(as_ptr);
+pub fn create(name_ptr: usize, name_len: u32) ?*AnimationSystem {
     const app = get_app();
-    const name = c.readFromUtf16StrAlloc(args[0..2]) orelse return null;
+    const name = c.readFromUtf16StrAlloc(name_ptr, name_len) orelse return null;
     const as = AnimationSystem.create(app.ctx.allocator()) catch |err| {
         std.log.err("j2d.AnimationSystem.create() for {s} error: {}", .{ name, err });
         return null;
     };
     app.as_map_2d.put(name, as) catch @panic("OOM");
-    as_ptr = @intCast(@intFromPtr(as));
-    return null;
+    return as;
 }
 
 fn animation_system_signal(animation_name: []const u8) void {
@@ -60,11 +41,7 @@ fn animation_system_signal(animation_name: []const u8) void {
     };
 }
 
-// [moonbit]
-// fn connect_signal_ffi(as_ptr: UInt64) -> Bool = "lunar" "connect_signal"
-pub fn connectSignal(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const as = args[0].toHostPtr(AnimationSystem);
+pub fn connectSignal(as: *AnimationSystem) bool {
     const app = get_app();
     var it = app.as_map_2d.iterator();
     var name: ?[]const u8 = null;
@@ -74,146 +51,96 @@ pub fn connectSignal(args: []const Value, results: []Value) ?Ptr {
         }
     }
     if (name == null) {
-        std.log.err("No AnimationSystem found for ptr={}", .{args[0].of.i64});
-        return null;
+        std.log.err("No AnimationSystem found for ptr={}", .{@intFromPtr(as)});
+        return false;
     }
     // FIXME: name actually unused
     as.sig.connect(animation_system_signal) catch @panic("OOM");
-    results[0] = newi32(1);
-    return null;
+    return true;
 }
 
-// [moonbit]
-// fn add_simple_animation_ffi(
-//   as_ptr: UInt64,
-//   name_ptr: Int, name_len: Int,
-//   frame_datas_start_ptr: Int, frame_data_count: Int,
-//   fps: Float, wait_time: Float, is_loop: Bool, reverse: Bool,
-// ) -> Bool = "lunar" "add_simple_animation"
-pub fn addSimple(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-
+pub fn addSimple(
+    as: *AnimationSystem,
+    name_ptr: usize,
+    name_len: u32,
+    frame_datas_start_ptr: usize,
+    frame_data_count: u32,
+    fps: f32,
+    wait_time: f32,
+    is_loop: bool,
+    reverse: bool,
+) bool {
     const app = get_app();
     const mem = app.guest_mem_data();
-    const as = args[0].toHostPtr(j2d.AnimationSystem);
-    const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
-    const sp_count: usize = @intCast(args[4].toNumber(i32));
-    const frames: []Frame.Data = app.ctx.allocator().alloc(Frame.Data, sp_count) catch @panic("OOM");
+    const name = c.readFromUtf16StrWithApp(name_ptr, name_len) orelse return false;
+    const frames: []Frame.Data = app.ctx.allocator().alloc(Frame.Data, @intCast(frame_data_count)) catch @panic("OOM");
     defer app.ctx.allocator().free(frames);
-    var guest_ptr = args[3].toGuestPtr();
-    for (0..sp_count) |idx| {
+    var guest_ptr = frame_datas_start_ptr;
+    for (0..frame_data_count) |idx| {
         frames[idx], guest_ptr = c.readFrameDataPtr(mem, guest_ptr);
     }
-    const fps = args[5].toNumber(f32);
     var opt = AnimationSystem.AnimOption{};
-    opt.wait_time = args[6].toNumber(f32);
-    opt.loop = args[7].toBool();
-    opt.reverse = args[8].toBool();
+    opt.wait_time = wait_time;
+    opt.loop = is_loop;
+    opt.reverse = reverse;
     as.addSimple(name, frames, fps, opt) catch |err| {
         std.log.err("AnimationSystem.addSimple({s}) error: {}", .{ name, err });
-        return null;
+        return false;
     };
-    results[0] = newi32(1);
-    return null;
+    return true;
 }
 
-// [moonbit]
-// fn animation_system_is_over_ffi(
-//   as_ptr: UInt64,
-//   name_ptr: Int, name_len: Int,
-//   is_over_ptr: Int,
-// ) -> Bool = "lunar" "animation_system_is_over"
-fn isOver(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const as = args[0].toHostPtr(AnimationSystem);
-    const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
+fn isOver(as: *AnimationSystem, name_ptr: usize, name_len: u32, is_over_ptr: usize) bool {
+    const name = c.readFromUtf16StrWithApp(name_ptr, name_len) orelse return false;
     const is_over = as.isOver(name) catch |err| {
         std.log.err("AnimationSystem.isOver({s}) error: {}", .{ name, err });
-        return null;
+        return false;
     };
-    c.writeBoolArg(&args[3], is_over);
-    results[0] = newi32(1);
-    return null;
+    const mem = get_app().guest_mem_data();
+    c.writeBoolPtr(mem, is_over_ptr, is_over);
+    return true;
 }
 
-// [moonbit]
-// fn animation_system_is_stopped_ffi(
-//   as_ptr: UInt64,
-//   name_ptr: Int, name_len: Int,
-//   is_stopped_ptr: Int,
-// ) -> Bool = "lunar" "animation_system_is_stopped"
-fn isStopped(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const as = args[0].toHostPtr(AnimationSystem);
-    const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
+fn isStopped(as: *AnimationSystem, name_ptr: usize, name_len: u32, is_stopped_ptr: usize) bool {
+    const name = c.readFromUtf16StrWithApp(name_ptr, name_len) orelse return false;
     const is_stopped = as.isStopped(name) catch |err| {
         std.log.err("AnimationSystem.isStopped({s}) error: {}", .{ name, err });
-        return null;
+        return false;
     };
-    c.writeBoolArg(&args[3], is_stopped);
-    results[0] = newi32(1);
-    return null;
+    const mem = get_app().guest_mem_data();
+    c.writeBoolPtr(mem, is_stopped_ptr, is_stopped);
+    return true;
 }
 
-// [moonbit]
-// fn animation_system_reset_ffi(
-//   as_ptr: UInt64,
-//   name_ptr: Int, name_len: Int,
-// ) -> Bool = "lunar" "animation_system_reset"
-fn reset(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const as = args[0].toHostPtr(AnimationSystem);
-    const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
+fn reset(as: *AnimationSystem, name_ptr: usize, name_len: u32) bool {
+    const name = c.readFromUtf16StrWithApp(name_ptr, name_len) orelse return false;
     as.reset(name) catch |err| {
         std.log.err("AnimationSystem.reset({s}) error: {}", .{ name, err });
-        return null;
+        return false;
     };
-    results[0] = newi32(1);
-    return null;
+    return true;
 }
 
-// [moonbit]
-// fn animation_system_set_stop_ffi(
-//   as_ptr: UInt64,
-//   name_ptr: Int, name_len: Int,
-//   stop: Bool,
-// ) -> Bool = "lunar" "animation_system_set_stop"
-fn setStop(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const as = args[0].toHostPtr(AnimationSystem);
-    const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
-    const stop = args[3].toBool();
+fn setStop(as: *AnimationSystem, name_ptr: usize, name_len: u32, stop: bool) bool {
+    const name = c.readFromUtf16StrWithApp(name_ptr, name_len) orelse return false;
     as.setStop(name, stop) catch |err| {
         std.log.err("AnimationSystem.setStop({s}, {}) error: {}", .{ name, stop, err });
-        return null;
+        return false;
     };
-    results[0] = newi32(1);
-    return null;
+    return true;
 }
 
-// [moonbit]
-// fn animation_system_get_current_frame_ffi(
-//   as_ptr: UInt64,
-//   name_ptr: Int, name_len: Int,
-//   sprite_ptr: Int,
-// ) -> Bool = "lunar" "animation_system_get_current_frame"
-fn getCurrentFrame(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const as = args[0].toHostPtr(AnimationSystem);
-    const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
+fn getCurrentFrame(as: *AnimationSystem, name_ptr: usize, name_len: u32, frame_data_ptr: usize) bool {
+    const mem = get_app().guest_mem_data();
+    const name = c.readFromUtf16StrWithApp(name_ptr, name_len) orelse return false;
     const frame = as.getCurrentFrame(name) catch |err| {
         std.log.err("AnimationSystem.getCurrentFrame({s}) error: {}", .{ name, err });
-        return null;
+        return false;
     };
-    _ = c.writeFrameDataArg(&args[3], &frame);
-    results[0] = newi32(1);
-    return null;
+    _ = c.writeFrameDataPtr(mem, frame_data_ptr, &frame);
+    return true;
 }
 
-// [moonbit] fn animation_system_update_ffi(as_ptr: UInt64, delta_tick: Float) = "lunar" "animation_system_update"
-fn update(args: []const Value, _: []Value) ?Ptr {
-    const as = args[0].toHostPtr(AnimationSystem);
-    const delta_tick = args[1].toNumber(f32);
+fn update(as: *AnimationSystem, delta_tick: f32) void {
     as.update(delta_tick);
-    return null;
 }

@@ -17,17 +17,10 @@ const AnimationSystem = jok.j2d.AnimationSystem;
 const DrawCmd = jok.j2d.DrawCmd;
 const FrameData = AnimationSystem.Frame.Data;
 
-pub const FuncDef = struct {
-    []const u8,
-    w.HostFn,
-    []const w.WasmValKind,
-    []const w.WasmValKind,
-};
-
-pub fn readFromUtf16StrWithApp(args: []const Value) ?[]u8 {
+pub fn readFromUtf16StrWithApp(ptr: usize, len_u32: u32) ?[]u8 {
     const app = get_app();
     const mem_data = app.guest_mem_data();
-    const text = readFromUtf16Str(&app.bytes_buffer, mem_data, args) catch |err| {
+    const text = readFromUtf16Str(&app.bytes_buffer, mem_data, ptr, len_u32) catch |err| {
         std.log.err("read utf16 string err: {}", .{err});
         return null;
     };
@@ -35,14 +28,14 @@ pub fn readFromUtf16StrWithApp(args: []const Value) ?[]u8 {
     return text;
 }
 
-pub fn readFromUtf16StrWithApp2(args1: []const Value, args2: []const Value) ?struct { []u8, []u8 } {
+pub fn readFromUtf16StrWithApp2(ptr1: usize, len1: u32, ptr2: usize, len2: u32) ?struct { []u8, []u8 } {
     const app = get_app();
     const mem_data = app.guest_mem_data();
-    const text1 = readFromUtf16Str(&app.bytes_buffer, mem_data, args1) catch |err| {
+    const text1 = readFromUtf16Str(&app.bytes_buffer, mem_data, ptr1, len1) catch |err| {
         std.log.err("read #1 utf16 string err: {}", .{err});
         return null;
     };
-    const text2 = readFromUtf16Str(&app.bytes_buffer, mem_data, args2) catch |err| {
+    const text2 = readFromUtf16Str(&app.bytes_buffer, mem_data, ptr2, len2) catch |err| {
         std.log.err("read #2 utf16 string err: {}", .{err});
         return null;
     };
@@ -50,9 +43,8 @@ pub fn readFromUtf16StrWithApp2(args1: []const Value, args2: []const Value) ?str
     return .{ text1, text2[text1.len + 1 ..] };
 }
 
-pub fn readFromUtf16StrAlloc(args: []const Value) ?[]u8 {
-    const ptr = args[0].toGuestPtr();
-    const len: usize = @intCast(args[1].of.i32);
+pub fn readFromUtf16StrAlloc(ptr: usize, len_u32: u32) ?[]u8 {
+    const len: usize = @intCast(len_u32);
     const app = get_app();
     const mem_data = app.guest_mem_data();
     const text = std.unicode.utf16LeToUtf8Alloc(
@@ -69,10 +61,10 @@ pub fn readFromUtf16StrAlloc(args: []const Value) ?[]u8 {
 pub fn readFromUtf16Str(
     buf: *std.ArrayList(u8),
     mem_data: [*]u8,
-    args: []const Value,
+    ptr: usize,
+    len_u32: u32,
 ) ![]u8 {
-    const ptr = args[0].toGuestPtr();
-    const len: usize = @intCast(args[1].of.i32);
+    const len: usize = @intCast(len_u32);
     try std.unicode.utf16LeToUtf8ArrayList(
         buf,
         @alignCast(@ptrCast(mem_data[ptr .. ptr + len * 2])),
@@ -464,6 +456,10 @@ pub fn writeSpriteOptionPtr(mem: [*]u8, init_guest_ptr: usize, opt: *const Sprit
 
 pub fn writeBoolArg(arg: *const Value, val: bool) void {
     get_app().guest_mem_data()[arg.toGuestPtr()] = @intFromBool(val);
+}
+
+pub fn writeBoolPtr(mem: [*]u8, host_ptr: usize, val: bool) void {
+    mem[host_ptr] = @intFromBool(val);
 }
 
 fn readFn(comptime T: type) type {

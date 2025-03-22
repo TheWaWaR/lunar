@@ -10,106 +10,67 @@ const sprite_sheet = @import("j2d/sprite_sheet.zig");
 const sprite = @import("j2d/sprite.zig");
 
 const j2d = jok.j2d;
-const Value = w.Value;
-const Ptr = w.Ptr;
 const Sprite = j2d.Sprite;
 const Batch = j2d.Batch;
 const Frame = j2d.AnimationSystem.Frame;
 
-const I32 = w.WasmValKind.i32;
-const I64 = w.WasmValKind.i64;
-const F32 = w.WasmValKind.f32;
-const F64 = w.WasmValKind.f64;
-
-const newi32 = Value.newI32;
-const newi64 = Value.newI64;
-const newf32 = Value.newF32;
-const newf64 = Value.newF64;
-const newptr = Value.newPtr;
-
-pub const FUNCS = [_]c.FuncDef{
-    .{ "batch_new_2d", batchNew, &.{}, &.{I64} },
-    .{ "batch_submit_2d", batchSubmit, &.{I64}, &.{} },
-    .{ "batch_push_transform_2d", batchPushTransform, &.{I64}, &.{I32} },
-    .{ "batch_pop_transform_2d", batchPopTransform, &.{I64}, &.{} },
-    .{ "batch_set_transform_2d", batchSetTransform, &.{ I64, I64 }, &.{} },
-    .{ "batch_sprite_2d", batchSprite, &.{ I64, I64, I64 }, &.{I32} },
-    .{ "batch_push_draw_cmd_2d", batchPushDrawCmd, &.{ I64, I64 }, &.{I32} },
+pub const FUNCS = [_]w.FuncInfo{
+    w.wrapHostFn("batch_new_2d", batchNew),
+    w.wrapHostFn("batch_submit_2d", batchSubmit),
+    w.wrapHostFn("batch_push_transform_2d", batchPushTransform),
+    w.wrapHostFn("batch_pop_transform_2d", batchPopTransform),
+    w.wrapHostFn("batch_set_transform_2d", batchSetTransform),
+    w.wrapHostFn("batch_sprite_2d", batchSprite),
+    w.wrapHostFn("batch_push_draw_cmd_2d", batchPushDrawCmd),
 } ++ animation_system.FUNCS ++ affine_transform.FUNCS ++ sprite_sheet.FUNCS ++ sprite.FUNCS;
 
-// [moonbit] fn batch_new_2d_ffi() -> UInt64 = "lunar" "batch_new_2d"
-fn batchNew(_: []const Value, results: []Value) ?Ptr {
-    results[0] = newi64(0);
+fn batchNew() ?*Batch {
     const batch = get_app().batchpool_2d.new(.{}) catch |err| {
         std.log.err("new 2d batch error: {}", .{err});
         return null;
     };
-    results[0] = newptr(batch);
-    return null;
+    return batch;
 }
 
-// [moonbit] fn batch_submit_2d_ffi(batch_ptr: UInt64)  = "lunar" "batch_submit_2d"
-fn batchSubmit(args: []const Value, _: []Value) ?Ptr {
-    const batch = args[0].toHostPtr(Batch);
+fn batchSubmit(batch: *Batch) void {
     batch.submit();
-    return null;
 }
 
-// [moonbit] fn batch_push_transform_2d_ffi(batch_ptr: UInt64) -> Bool  = "lunar" "batch_push_transform_2d"
-fn batchPushTransform(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const batch = args[0].toHostPtr(Batch);
+fn batchPushTransform(batch: *Batch) bool {
     batch.pushTransform() catch |err| {
         std.log.err("Batch.pushTransform error: {}", .{err});
+        return false;
     };
-    results[0] = newi32(1);
-    return null;
+    return true;
 }
 
-// [moonbit] fn batch_pop_transform_2d_ffi(batch_ptr: UInt64)  = "lunar" "batch_pop_transform_2d"
-fn batchPopTransform(args: []const Value, _: []Value) ?Ptr {
-    const batch = args[0].toHostPtr(Batch);
+fn batchPopTransform(batch: *Batch) void {
     batch.popTransform();
-    return null;
 }
 
-// [moonbit] fn batch_set_transform_2d_ffi(
-//   batch_ptr: UInt64, mat_ptr: Int,
-// ) = "lunar" "batch_set_transform_2d"
-fn batchSetTransform(args: []const Value, _: []Value) ?Ptr {
-    const batch = args[0].toHostPtr(Batch);
-    const mat = c.readMatArg(&args[1]);
+fn batchSetTransform(batch: *Batch, mat_ptr: usize) void {
+    const mem = get_app().guest_mem_data();
+    const mat, _ = c.readMatPtr(mem, mat_ptr);
     batch.trs = .{ .mat = mat };
-    return null;
 }
 
-// [moonbit] fn batch_sprite_2d_ffi(
-//   batch_ptr: UInt64, sp_ptr: Int, opt_ptr: Int,
-// ) -> Bool = "lunar" "batch_sprite_2d"
-fn batchSprite(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const batch = args[0].toHostPtr(Batch);
-    const sp = c.readSpriteArg(&args[1]);
-    const opt = c.readSpriteOptionArg(&args[2]);
+fn batchSprite(batch: *Batch, sp_ptr: usize, opt_ptr: usize) bool {
+    const mem = get_app().guest_mem_data();
+    const sp, _ = c.readSpritePtr(mem, sp_ptr);
+    const opt, _ = c.readSpriteOptionPtr(mem, opt_ptr);
     batch.sprite(sp, opt) catch |err| {
         std.log.err("Batch.sprite, error: {}", .{err});
-        return null;
+        return false;
     };
-    results[0] = newi32(1);
-    return null;
+    return true;
 }
 
-// [moonbit] fn batch_push_draw_cmd_2d_ffi(
-//   batch_ptr: UInt64, frame_data_ptr: Int
-// ) -> Bool = "lunar" "batch_push_draw_cmd_2d"
-fn batchPushDrawCmd(args: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(0);
-    const batch = args[0].toHostPtr(Batch);
-    const data = c.readFrameDataArg(&args[1]);
+fn batchPushDrawCmd(batch: *Batch, frame_data_ptr: usize) bool {
+    const mem = get_app().guest_mem_data();
+    const data, _ = c.readFrameDataPtr(mem, frame_data_ptr);
     batch.pushDrawCommand(data.dcmd) catch |err| {
         std.log.err("Batch.pushDrawCommand, error: {}", .{err});
-        return null;
+        return false;
     };
-    results[0] = newi32(1);
-    return null;
+    return true;
 }

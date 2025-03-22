@@ -4,55 +4,34 @@ const c = @import("common.zig");
 const w = @import("../wasmtime.zig");
 const get_app = @import("../main.zig").get_app;
 
-const Value = w.Value;
-const Ptr = w.Ptr;
-
-const I32 = w.WasmValKind.i32;
-const I64 = w.WasmValKind.i64;
-const F32 = w.WasmValKind.f32;
-const F64 = w.WasmValKind.f64;
-
-const newi32 = Value.newI32;
-const newi64 = Value.newI64;
-const newf32 = Value.newF32;
-const newf64 = Value.newF64;
-
-pub const FUNCS = [_]c.FuncDef{
-    .{ "get_keyboard_state", getKeyboardState, &.{I64}, &.{I64} },
-    .{ "is_key_pressed", isKeyPressed, &.{ I64, I64, I32 }, &.{I32} },
-    .{ "get_keyboard_modifier_state", getKeyboardModifierState, &.{}, &.{I32} },
-    .{ "get_mouse_state", getMouseState, &.{I64}, &.{I32} },
+pub const FUNCS = [_]w.FuncInfo{
+    w.wrapHostFn("get_keyboard_state", getKeyboardState),
+    w.wrapHostFn("is_key_pressed", isKeyPressed),
+    w.wrapHostFn("get_keyboard_modifier_state", getKeyboardModifierState),
+    w.wrapHostFn("get_mouse_state", getMouseState),
 };
 
-// [moonbit]: fn get_keyboard_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyboard_state"
-pub fn getKeyboardState(args: []const Value, results: []Value) ?Ptr {
+pub fn getKeyboardState(len_ptr: usize) u64 {
+    const mem = get_app().guest_mem_data();
     const states = jok.io.getKeyboardState().states;
-    _ = c.writeNumberArg(&args[0], states.len);
-    results[0] = newi64(@intCast(@intFromPtr(states.ptr)));
-    return null;
+    _ = c.writeNumber(mem, len_ptr, states.len);
+    return @intCast(@intFromPtr(states.ptr));
 }
 
-// [moonbit] fn is_key_pressed_ffi(states_ptr: UInt64, states_len: UInt64, scancode: Int) -> Bool = "lunar" "is_key_pressed"
-pub fn isKeyPressed(args: []const Value, results: []Value) ?Ptr {
-    const states = args[0].toHostBytes(&args[1]);
-    const scancode = args[2].toNumber(c_uint);
-
+pub fn isKeyPressed(states_ptr: *u8, states_len: usize, scancode: c_uint) bool {
+    const ptr: [*]u8 = @alignCast(@ptrCast(states_ptr));
+    const states = ptr[0..states_len];
     const kbd = jok.io.KeyboardState{ .states = states };
-    const is_pressed = kbd.isPressed(@enumFromInt(scancode));
-    results[0] = newi32(@intFromBool(is_pressed));
-    return null;
+    return kbd.isPressed(@enumFromInt(scancode));
 }
 
-// [moonbit] fn get_keyboard_modifier_state_ffi() -> UInt16 = "lunar" "get_keyboard_modifier_state"
-pub fn getKeyboardModifierState(_: []const Value, results: []Value) ?Ptr {
-    results[0] = newi32(@intCast(jok.io.getKeyboardModifierState().storage));
-    return null;
+pub fn getKeyboardModifierState() u16 {
+    return jok.io.getKeyboardModifierState().storage;
 }
 
-// [moonbit] fn get_mouse_state_ffi(pos_ptr: Int) -> Byte = "lunar" "get_mouse_state"
-pub fn getMouseState(args: []const Value, results: []Value) ?Ptr {
+pub fn getMouseState(pos_ptr: usize) u8 {
+    const mem = get_app().guest_mem_data();
     const state = jok.io.getMouseState();
-    c.writePointArg(&args[0], state.pos);
-    results[0] = newi32(@intCast(state.buttons.storage));
-    return null;
+    _ = c.writePointPtr(mem, pos_ptr, &state.pos);
+    return @intCast(state.buttons.storage);
 }

@@ -4,85 +4,43 @@ const w = @import("../wasmtime.zig");
 const c = @import("common.zig");
 const get_app = @import("../main.zig").get_app;
 
-const Value = w.Value;
-const Ptr = w.Ptr;
-
-const I32 = w.WasmValKind.i32;
-const I64 = w.WasmValKind.i64;
-const F32 = w.WasmValKind.f32;
-const F64 = w.WasmValKind.f64;
-
-const newi32 = Value.newI32;
-const newi64 = Value.newI64;
-const newf32 = Value.newF32;
-const newf64 = Value.newF64;
-const newptr = Value.newPtr;
-
-pub const FUNCS = [_]c.FuncDef{
-    .{ "debug_print", debugPrint, &.{ I64, I32, I64, I64 }, &.{} },
-    .{ "kill", kill, &.{}, &.{} },
-    .{ "delta_seconds", deltaSeconds, &.{}, &.{F32} },
-    .{ "get_canvas_size", getCanvasSize, &.{ I64, I64 }, &.{} },
-    .{ "get_renderer", getRenderer, &.{}, &.{I64} },
-    .{ "display_stats", displayStats, &.{}, &.{} },
+pub const FUNCS = [_]w.FuncInfo{
+    w.wrapHostFn("debug_print", debugPrint),
+    w.wrapHostFn("kill", kill),
+    w.wrapHostFn("delta_seconds", deltaSeconds),
+    w.wrapHostFn("get_canvas_size", getCanvasSize),
+    w.wrapHostFn("get_renderer", getRenderer),
+    w.wrapHostFn("display_stats", displayStats),
 };
 
-// NOTE: for native host function
-pub export fn debug_print(text_ptr: i32, text_len: i32, pos_ptr: i32, color_ptr: i32) void {
-    const params: []const Value = &.{
-        newi32(text_ptr),
-        newi32(text_len),
-        newi32(pos_ptr),
-        newi32(color_ptr),
-    };
-    _ = debugPrint(params, &.{});
-}
-// [moonbit]
-// fn debug_print_ffi(
-//   text_ptr: Int, text_len: Int,
-//   pos_ptr: Int, color_ptr: Int,
-// ) = "lunar" "debug_print"
-fn debugPrint(args: []const Value, _: []Value) ?Ptr {
-    const text = c.readFromUtf16StrWithApp(args[0..2]) orelse return null;
-    const pos = c.readPointArg(&args[2]);
-    const color = c.readColorArg(&args[3]);
+fn debugPrint(text_ptr: usize, text_len: u32, pos_ptr: usize, color_ptr: usize) void {
+    const text = c.readFromUtf16StrWithApp(text_ptr, text_len) orelse return;
+    const mem = get_app().guest_mem_data();
+    const pos, _ = c.readPointPtr(mem, pos_ptr);
+    const color, _ = c.readColorPtr(mem, color_ptr);
     get_app().ctx.debugPrint(text, .{ .pos = pos, .color = color });
-    return null;
 }
 
-fn kill(_: []const Value, _: []Value) ?Ptr {
+fn kill() void {
     get_app().ctx.kill();
-    return null;
 }
 
-// [moonbit] fn delta_seconds_ffi() -> Float = "lunar" "delta_seconds"
-fn deltaSeconds(_: []const Value, results: []Value) ?Ptr {
-    results[0] = newf32(get_app().ctx.deltaSeconds());
-    return null;
+fn deltaSeconds() f32 {
+    return get_app().ctx.deltaSeconds();
 }
 
-// [moonbit] fn get_canvas_size(width_ptr: Int, height_ptr: Int) = "lunar" "get_canvas_size"
-fn getCanvasSize(args: []const Value, _: []Value) ?Ptr {
+fn getCanvasSize(width_ptr: usize, height_ptr: usize) void {
+    const mem = get_app().guest_mem_data();
     const size = get_app().ctx.getCanvasSize();
-    _ = c.writeNumberArg(&args[0], size.width);
-    _ = c.writeNumberArg(&args[1], size.height);
-    return null;
+    _ = c.writeNumber(mem, width_ptr, size.width);
+    _ = c.writeNumber(mem, height_ptr, size.height);
 }
 
-// NOTE: for native host function
-pub export fn get_renderer() u64 {
-    var results: [1]Value = undefined;
-    _ = getRenderer(&.{}, &results);
-    return results[0].toNumber(u64);
-}
-// [moonbit] fn get_renderer_ffi() -> UInt64 = "lunar" "get_renderer"
-fn getRenderer(_: []const Value, results: []Value) ?Ptr {
-    results[0] = newptr(get_app().get_renderer());
-    return null;
+fn getRenderer() *jok.Renderer {
+    return get_app().get_renderer();
 }
 
-// [moonbit] fn display_stats_ffi() = "lunar" "display_stats"
-fn displayStats(_: []const Value, _: []Value) ?Ptr {
+fn displayStats() void {
+    // FIXME: provider DisplayStats
     get_app().ctx.displayStats(.{});
-    return null;
 }

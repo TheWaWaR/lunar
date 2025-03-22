@@ -1,6 +1,8 @@
 const std = @import("std");
 const cdef = @import("wasmtime/cdef.zig");
 
+const assert = std.debug.assert;
+
 pub const Ptr = cdef.Ptr;
 pub const ConstPtr = cdef.ConstPtr;
 pub const WasmValKind = cdef.WasmValKind;
@@ -27,11 +29,113 @@ pub const WasmtimeError = error{
 };
 
 pub const HostFn = *const fn (args: []const Value, results: []Value) ?Ptr;
-
 pub const host_fn_log: bool = false;
 
-pub fn wrapHostFn(comptime host_fn: HostFn, comptime name: []const u8) CallbackFn {
-    return struct {
+fn type2kind(comptime T: type) WasmValKind {
+    switch (@typeInfo(T)) {
+        .bool => return WasmValKind.i32,
+        .pointer => return WasmValKind.i64,
+        .int => |vint| {
+            if (vint.bits <= 4 * 8) {
+                return WasmValKind.i32;
+            } else if (vint.bits <= 8 * 8) {
+                return WasmValKind.i64;
+            } else {
+                @compileError("Invalid host int type");
+            }
+        },
+        .float => |vfloat| {
+            if (vfloat.bits <= 4 * 8) {
+                return WasmValKind.f32;
+            } else if (vfloat.bits <= 8 * 8) {
+                return WasmValKind.f64;
+            } else {
+                @compileError("Invalid host float type");
+            }
+        },
+        .optional => |vopt| {
+            if (@typeInfo(vopt.child) == .pointer) {
+                return WasmValKind.i64;
+            } else {
+                @compileError("Host function return type only accept pointer option");
+            }
+        },
+        else => @compileError("Invalid host type"),
+    }
+}
+fn type2param(comptime T: type, arg: *const Value) T {
+    return switch (@typeInfo(T)) {
+        .bool => arg.toBool(),
+        .pointer => |p| arg.toHostPtr(p.child),
+        .int => arg.toNumber(T),
+        .float => arg.toNumber(T),
+        else => @compileError("Invalid host param type"),
+    };
+}
+fn type2result(comptime T: type, val: T) Value {
+    switch (@typeInfo(T)) {
+        .bool => return Value.newI32(@intFromBool(val)),
+        .pointer => return Value.newI64(@intCast(@intFromPtr(val))),
+        .int => |vint| {
+            if (vint.bits <= 4 * 8) {
+                return Value.newI32(@intCast(val));
+            } else if (vint.bits <= 8 * 8) {
+                return Value.newI64(@intCast(val));
+            } else {
+                @compileError("Invalid host return int type");
+            }
+        },
+        .float => |vfloat| {
+            if (vfloat.bits <= 4 * 8) {
+                return Value.newF32(@floatCast(val));
+            } else if (vfloat.bits <= 8 * 8) {
+                return Value.newF64(@floatCast(val));
+            } else {
+                @compileError("Invalid host return float type");
+            }
+        },
+        .optional => |vopt| {
+            if (@typeInfo(vopt.child) == .pointer) {
+                if (val) |p| {
+                    return Value.newI64(@intCast(@intFromPtr(p)));
+                } else {
+                    return Value.newI64(0);
+                }
+            } else {
+                @compileError("Host function return type only accept pointer option");
+            }
+        },
+        else => @compileError("Invalid host return type"),
+    }
+}
+
+pub const FuncInfo = struct {
+    []const u8,
+    CallbackFn,
+    []const WasmValKind,
+    []const WasmValKind,
+};
+
+pub fn wrapHostFn(
+    comptime name: []const u8,
+    comptime host_fn: anytype,
+) FuncInfo {
+    const fn_ty = switch (@typeInfo(@TypeOf(host_fn))) {
+        .@"fn" => |vfn| vfn,
+        else => @panic("Invalid host function type"),
+    };
+    comptime var var_fn_params: [fn_ty.params.len]WasmValKind = undefined;
+    for (fn_ty.params, 0..) |param, idx| {
+        var_fn_params[idx] = type2kind(param.type.?);
+    }
+    // https://ziggit.dev/t/comptime-mutable-memory-changes/3702#tldr-1
+    const fn_params: [fn_ty.params.len]WasmValKind = var_fn_params;
+    const fn_results: []const WasmValKind = switch (@typeInfo(fn_ty.return_type.?)) {
+        .void => &.{},
+        else => &.{type2kind(fn_ty.return_type.?)},
+    };
+
+    const callback = struct {
         fn callback(
             env: Ptr,
             caller: Ptr,
@@ -42,16 +146,29 @@ pub fn wrapHostFn(comptime host_fn: HostFn, comptime name: []const u8) CallbackF
         ) callconv(.C) ?Ptr {
             _ = env;
             _ = caller;
+            assert(nargs == fn_params.len);
+            assert(nresults == fn_results.len);
+
             if (host_fn_log) {
                 std.log.info("call host: {s} BEGIN", .{name});
             }
-            const ret = host_fn(args[0..nargs], results[0..nresults]);
+
+            var params: std.meta.ArgsTuple(@TypeOf(host_fn)) = undefined;
+            inline for (fn_ty.params, 0..) |param, idx| {
+                params[idx] = type2param(param.type.?, &args[idx]);
+            }
+            const ret = @call(.auto, host_fn, params);
+            if (fn_results.len > 0) {
+                results[0] = type2result(fn_ty.return_type.?, ret);
+            }
+
             if (host_fn_log) {
                 std.log.info("call host: {s} END", .{name});
             }
-            return ret;
+            return null;
         }
     }.callback;
+    return .{ name, callback, fn_params[0..], fn_results };
 }
 
 fn print_err(err_ptr: Ptr) void {
