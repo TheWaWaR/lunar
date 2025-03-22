@@ -7,6 +7,9 @@ const assert = std.debug.assert;
 const expectEqual = std.testing.expectEqual;
 const Allocator = std.mem.Allocator;
 const Value = w.Value;
+
+const Color = jok.Color;
+const Point = jok.Point;
 const Mat = jok.zmath.Mat;
 const Sprite = jok.j2d.Sprite;
 const SpriteOption = jok.j2d.Batch.SpriteOption;
@@ -87,45 +90,45 @@ pub fn readBytes(args: []const Value) []const u8 {
     return mem_data[ptr .. ptr + len];
 }
 
-pub fn readPointArg(arg: *const Value) jok.Point {
+pub fn readPointArg(arg: *const Value) Point {
     const mem = get_app().guest_mem_data();
     return readPointPtr(mem, arg.toGuestPtr())[0];
 }
 
-pub fn readPointPtr(mem: [*]u8, init_guest_ptr: usize) struct { jok.Point, usize } {
+pub fn readPointPtr(mem: [*]u8, init_guest_ptr: usize) struct { Point, usize } {
     var guest_ptr = init_guest_ptr;
-    var p: jok.Point = undefined;
+    var p: Point = undefined;
     guest_ptr = readNumber(f32, mem, guest_ptr, &p.x);
     guest_ptr = readNumber(f32, mem, guest_ptr, &p.y);
     return .{ p, guest_ptr };
 }
 
-pub fn writePointArg(arg: *const Value, point: jok.Point) void {
+pub fn writePointArg(arg: *const Value, point: Point) void {
     const mem = get_app().guest_mem_data();
-    _ = writePointPtr(mem, arg.toGuestPtr(), point);
+    _ = writePointPtr(mem, arg.toGuestPtr(), &point);
 }
 
-pub fn writePointPtr(mem: [*]u8, init_guest_ptr: usize, point: jok.Point) usize {
+pub fn writePointPtr(mem: [*]u8, init_guest_ptr: usize, point: *const Point) usize {
     var guest_ptr = init_guest_ptr;
     guest_ptr = writeNumber(mem, guest_ptr, point.x);
     guest_ptr = writeNumber(mem, guest_ptr, point.y);
     return guest_ptr;
 }
 
-pub fn readColorArg(arg: *const Value) jok.Color {
+pub fn readColorArg(arg: *const Value) Color {
     const mem = get_app().guest_mem_data();
     return readColorPtr(mem, arg.toGuestPtr())[0];
 }
 
-pub fn readColorPtr(mem: [*]u8, guest_ptr: usize) struct { jok.Color, usize } {
+pub fn readColorPtr(mem: [*]u8, guest_ptr: usize) struct { Color, usize } {
     const r: u8 = mem[guest_ptr + 0];
     const g: u8 = mem[guest_ptr + 1];
     const b: u8 = mem[guest_ptr + 2];
     const a: u8 = mem[guest_ptr + 3];
-    return .{ jok.Color.rgba(r, g, b, a), guest_ptr + 4 };
+    return .{ Color.rgba(r, g, b, a), guest_ptr + 4 };
 }
 
-pub fn writeColorPtr(mem: [*]u8, guest_ptr: usize, color: jok.Color) usize {
+pub fn writeColorPtr(mem: [*]u8, guest_ptr: usize, color: *const Color) usize {
     mem[guest_ptr + 0] = color.r;
     mem[guest_ptr + 1] = color.g;
     mem[guest_ptr + 2] = color.b;
@@ -232,7 +235,7 @@ pub fn readDrawCmdPtr(mem: [*]u8, init_guest_ptr: usize) struct { DrawCmd, usize
             dcmd.cmd = .{ .circle = undefined };
             inline for (.{
                 &dcmd.cmd.circle.p.x,
-                &dcmd.cmd.circle.p.x,
+                &dcmd.cmd.circle.p.y,
                 &dcmd.cmd.circle.radius,
                 &dcmd.cmd.circle.color,
                 &dcmd.cmd.circle.thickness,
@@ -275,7 +278,7 @@ pub fn writeDrawCmdPtr(mem: [*]u8, init_guest_ptr: usize, cmd: *const DrawCmd) u
             enum_tag = 10;
             inline for (.{
                 cmd.cmd.circle.p.x,
-                cmd.cmd.circle.p.x,
+                cmd.cmd.circle.p.y,
                 cmd.cmd.circle.radius,
                 cmd.cmd.circle.color,
                 cmd.cmd.circle.thickness,
@@ -376,10 +379,10 @@ pub fn writeNumber(mem: [*]u8, guest_ptr: usize, val: anytype) usize {
 
 pub fn writeMatArg(arg: *const Value, mat: Mat) void {
     const mem = get_app().guest_mem_data();
-    _ = writeMatPtr(mem, arg.toGuestPtr(), mat);
+    _ = writeMatPtr(mem, arg.toGuestPtr(), &mat);
 }
 
-pub fn writeMatPtr(mem: [*]u8, init_guest_ptr: usize, mat: Mat) usize {
+pub fn writeMatPtr(mem: [*]u8, init_guest_ptr: usize, mat: *const Mat) usize {
     var guest_ptr = init_guest_ptr;
     for (mat) |item| {
         for (0..4) |idx| {
@@ -409,28 +412,25 @@ pub fn readMatPtr(mem: [*]u8, init_guest_ptr: usize) struct { Mat, usize } {
 
 pub fn readSpriteOptionArg(arg: *const Value) SpriteOption {
     const mem = get_app().guest_mem_data();
-    return readSpriteOption(mem, arg.toGuestPtr())[0];
+    return readSpriteOptionPtr(mem, arg.toGuestPtr())[0];
 }
 
-pub fn readSpriteOption(mem: [*]u8, init_guest_ptr: usize) struct { SpriteOption, usize } {
+pub fn readSpriteOptionPtr(mem: [*]u8, init_guest_ptr: usize) struct { SpriteOption, usize } {
     const flags = mem[init_guest_ptr];
     var guest_ptr = init_guest_ptr + 1;
     var opt: SpriteOption = .{ .pos = .{ .x = 0, .y = 0 } };
-    guest_ptr = readNumber(f32, mem, guest_ptr, &opt.pos.x);
-    guest_ptr = readNumber(f32, mem, guest_ptr, &opt.pos.y);
+    opt.pos, guest_ptr = readPointPtr(mem, guest_ptr);
     if (flags & (1 << 1) > 0) {
         opt.tint_color, guest_ptr = readColorPtr(mem, guest_ptr);
     }
     if (flags & (1 << 2) > 0) {
-        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.scale.x);
-        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.scale.y);
+        opt.scale, guest_ptr = readPointPtr(mem, guest_ptr);
     }
     if (flags & (1 << 3) > 0) {
         guest_ptr = readNumber(f32, mem, guest_ptr, &opt.rotate_degree);
     }
     if (flags & (1 << 4) > 0) {
-        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.anchor_point.x);
-        guest_ptr = readNumber(f32, mem, guest_ptr, &opt.anchor_point.y);
+        opt.anchor_point, guest_ptr = readPointPtr(mem, guest_ptr);
     }
     if (flags & (1 << 5) > 0) {
         opt.flip_h = mem[guest_ptr] > 0;
@@ -446,30 +446,130 @@ pub fn readSpriteOption(mem: [*]u8, init_guest_ptr: usize) struct { SpriteOption
     return .{ opt, guest_ptr };
 }
 
+pub fn writeSpriteOptionPtr(mem: [*]u8, init_guest_ptr: usize, opt: *const SpriteOption) usize {
+    const flags: u8 = 0xFF;
+    mem[init_guest_ptr] = flags;
+    var guest_ptr = init_guest_ptr + 1;
+    guest_ptr = writePointPtr(mem, guest_ptr, &opt.pos);
+    guest_ptr = writeColorPtr(mem, guest_ptr, &opt.tint_color);
+    guest_ptr = writePointPtr(mem, guest_ptr, &opt.scale);
+    guest_ptr = writeNumber(mem, guest_ptr, opt.rotate_degree);
+    guest_ptr = writePointPtr(mem, guest_ptr, &opt.anchor_point);
+    mem[guest_ptr] = @intFromBool(opt.flip_h);
+    mem[guest_ptr] = @intFromBool(opt.flip_v);
+    guest_ptr += 2;
+    guest_ptr = writeNumber(mem, guest_ptr, opt.depth);
+    return guest_ptr;
+}
+
 pub fn writeBoolArg(arg: *const Value, val: bool) void {
     get_app().guest_mem_data()[arg.toGuestPtr()] = @intFromBool(val);
 }
 
-test "serde point" {
-    var mem_data: [64]u8 = undefined;
+fn readFn(comptime T: type) type {
+    return *const fn ([*]u8, usize) struct { T, usize };
+}
+fn writeFn(comptime T: type) type {
+    return *const fn ([*]u8, usize, *const T) usize;
+}
+// fn extraAssert(comptime T: type) type {
+//     return *const fn
+// }
+fn testSerde(comptime T: type, write: writeFn(T), read: readFn(T), value: T, size: usize) !void {
+    var mem_data: [512]u8 = undefined;
     const mem: [*]u8 = mem_data[0..].ptr;
-    const next1_ptr = writePointPtr(mem, 0, .{ .x = 33.3, .y = 44.4 });
-    try expectEqual(8, next1_ptr);
-    const p, const next2_ptr = readPointPtr(mem, 0);
-    try expectEqual(33.3, p.x);
-    try expectEqual(44.4, p.y);
-    try expectEqual(8, next2_ptr);
+    const next1_ptr = write(mem, 0, &value);
+    try expectEqual(size, next1_ptr);
+    const v, const next2_ptr = read(mem, 0);
+    try expectEqual(value, v);
+    try expectEqual(size, next2_ptr);
 }
 
-test "serde color" {
-    var mem_data: [64]u8 = undefined;
-    const mem: [*]u8 = mem_data[0..].ptr;
-    const next1_ptr = writeColorPtr(mem, 0, jok.Color.rgba(2, 5, 6, 7));
-    try expectEqual(4, next1_ptr);
-    const c, const next2_ptr = readColorPtr(mem, 0);
-    try expectEqual(2, c.r);
-    try expectEqual(5, c.g);
-    try expectEqual(6, c.b);
-    try expectEqual(7, c.a);
-    try expectEqual(4, next2_ptr);
+test "serde: point" {
+    try testSerde(
+        Point,
+        writePointPtr,
+        readPointPtr,
+        Point{ .x = 33.3, .y = 44.4 },
+        8,
+    );
+}
+
+test "serde: color" {
+    try testSerde(
+        Color,
+        writeColorPtr,
+        readColorPtr,
+        Color.rgba(2, 5, 6, 7),
+        4,
+    );
+}
+
+test "serde: mat" {
+    try testSerde(
+        Mat,
+        writeMatPtr,
+        readMatPtr,
+        Mat{
+            .{ 1.0, 2.0, 3.0, 4.0 },
+            .{ 1.1, 2.1, 3.1, 4.1 },
+            .{ 1.2, 2.2, 3.2, 4.2 },
+            .{ 1.3, 2.3, 3.3, 4.3 },
+        },
+        64,
+    );
+}
+
+test "serde: sprite" {
+    const sprite = Sprite{
+        .width = 33,
+        .height = 44,
+        .uv0 = .{ .x = 55, .y = 66 },
+        .uv1 = .{ .x = 77, .y = 88 },
+        .tex = .{ .ptr = @ptrFromInt(99) },
+    };
+    try testSerde(Sprite, writeSpritePtr, readSpritePtr, sprite, 32);
+}
+
+test "serde: sprite option" {
+    const opt = SpriteOption{
+        .pos = .{ .x = 11, .y = 22 },
+        .tint_color = Color.rgba(5, 6, 7, 8),
+        .scale = .{ .x = 33, .y = 44 },
+        .rotate_degree = 43.22,
+        .anchor_point = .{ .x = 55, .y = 66 },
+        .flip_h = true,
+        .flip_v = true,
+        .depth = 0.344,
+    };
+    try testSerde(SpriteOption, writeSpriteOptionPtr, readSpriteOptionPtr, opt, 39);
+}
+
+test "serde: FrameData" {
+    const sp_data = FrameData{
+        .sp = Sprite{
+            .width = 33,
+            .height = 44,
+            .uv0 = .{ .x = 55, .y = 66 },
+            .uv1 = .{ .x = 77, .y = 88 },
+            .tex = .{ .ptr = @ptrFromInt(99) },
+        },
+    };
+    try testSerde(FrameData, writeFrameDataPtr, readFrameDataPtr, sp_data, 33);
+
+    const cmd_data = FrameData{
+        .dcmd = DrawCmd{
+            .cmd = .{
+                .circle = .{
+                    .p = .{ .x = 11, .y = 22 },
+                    .radius = 99.12,
+                    .color = 533,
+                    .thickness = 34.33,
+                    .num_segments = 5,
+                },
+            },
+            .depth = 23.4,
+        },
+    };
+    try testSerde(FrameData, writeFrameDataPtr, readFrameDataPtr, cmd_data, 30);
 }
