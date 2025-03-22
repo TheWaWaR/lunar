@@ -36,12 +36,12 @@ pub struct MouseState {
 // }
 
 ///|
-fn get_keyboard_state_ffi(len_ptr : Int) -> UInt64 = "lunar" "get_keyboard_state"
+fn get_keyboard_state_ffi(len_ptr : UInt64) -> UInt64 = "lunar" "get_keyboard_state"
 
 ///|
 pub fn get_keyboard_state() -> KeyboardState {
   let len_ptr = get_global_buf_ptr()
-  let ptr = get_keyboard_state_ffi(len_ptr)
+  let ptr = get_keyboard_state_ffi(len_ptr.to_uint64())
   let len = load64_u(len_ptr)
   { slice: { ptr, len } }
 }
@@ -55,12 +55,12 @@ pub fn get_keyboard_modifier_state() -> KeyModifierSet {
 }
 
 ///|
-fn get_mouse_state_ffi(pos_ptr : Int) -> Byte = "lunar" "get_mouse_state"
+fn get_mouse_state_ffi(pos_ptr : UInt64) -> Byte = "lunar" "get_mouse_state"
 
 ///|
 pub fn get_mouse_state() -> MouseState {
   let pos_ptr = get_global_buf_ptr()
-  let buttons = get_mouse_state_ffi(pos_ptr)
+  let buttons = get_mouse_state_ffi(pos_ptr.to_uint64())
   let pos = Point::readFrom(pos_ptr)
   { buttons, pos }
 }

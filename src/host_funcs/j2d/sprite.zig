@@ -21,7 +21,7 @@ const newf32 = Value.newF32;
 const newf64 = Value.newF64;
 
 pub const FUNCS = [_]c.FuncDef{
-    .{"sprite_get_sub_sprite", getSubSprite, &.{I32, F32, F32, F32, F32, I32}, &.{}},
+    .{"sprite_get_sub_sprite", getSubSprite, &.{I64, F32, F32, F32, F32, I64}, &.{}},
 };
 
 // [moonbit]

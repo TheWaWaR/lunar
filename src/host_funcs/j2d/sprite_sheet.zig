@@ -21,8 +21,8 @@ const newf64 = Value.newF64;
 const newptr = Value.newPtr;
 
 pub const FUNCS = [_]c.FuncDef{
-    .{ "sprite_sheet_from_pictures_in_dir", fromPicturesInDir, &.{ I32, I32, I32, I32, I32, I32 }, &.{I64} },
-    .{ "get_sprite_by_name", getSpriteByName, &.{ I64, I32, I32, I32 }, &.{I32} },
+    .{ "sprite_sheet_from_pictures_in_dir", fromPicturesInDir, &.{ I64, I32, I64, I32, I32, I32 }, &.{I64} },
+    .{ "get_sprite_by_name", getSpriteByName, &.{ I64, I64, I32, I64 }, &.{I32} },
 };
 
 // [moonbit]

@@ -18,10 +18,10 @@ const newf32 = Value.newF32;
 const newf64 = Value.newF64;
 
 pub const FUNCS = [_]c.FuncDef{
-    .{ "get_keyboard_state", getKeyboardState, &.{I32}, &.{I64} },
+    .{ "get_keyboard_state", getKeyboardState, &.{I64}, &.{I64} },
     .{ "is_key_pressed", isKeyPressed, &.{ I64, I64, I32 }, &.{I32} },
     .{ "get_keyboard_modifier_state", getKeyboardModifierState, &.{}, &.{I32} },
-    .{ "get_mouse_state", getMouseState, &.{I32}, &.{I32} },
+    .{ "get_mouse_state", getMouseState, &.{I64}, &.{I32} },
 };
 
 // [moonbit]: fn get_keyboard_state_ffi(len_ptr: Int) -> UInt64  = "lunar" "get_keyboard_state"

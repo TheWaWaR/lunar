@@ -9,12 +9,12 @@ pub fn AnimationSystem::new(inner : UInt64) -> AnimationSystem {
 }
 
 ///|
-fn animation_system_create_ffi(name_ptr : Int, name_len : Int) -> UInt64 = "lunar" "animation_system_create"
+fn animation_system_create_ffi(name_ptr : UInt64, name_len : Int) -> UInt64 = "lunar" "animation_system_create"
 
 ///|
 pub fn AnimationSystem::create(name : String) -> AnimationSystem? {
   let name_ptr = str2ptr(name)
-  let inner = animation_system_create_ffi(name_ptr, name.length())
+  let inner = animation_system_create_ffi(name_ptr.to_uint64(), name.length())
   if inner > 0 {
     Some({ inner, })
   } else {
@@ -25,9 +25,9 @@ pub fn AnimationSystem::create(name : String) -> AnimationSystem? {
 ///|
 fn add_simple_animation_ffi(
   as_ptr : UInt64,
-  name_ptr : Int,
+  name_ptr : UInt64,
   name_len : Int,
-  sp_start_ptr : Int,
+  sp_start_ptr : UInt64,
   sp_count : Int,
   fps : Float,
   wait_time : Float,
@@ -51,9 +51,9 @@ pub fn AnimationSystem::add_simple(
   let name_ptr = str2ptr(name)
   add_simple_animation_ffi(
     self.inner,
-    name_ptr,
+    name_ptr.to_uint64(),
     name.length(),
-    ptr,
+    ptr.to_uint64(),
     frame_datas.length(),
     fps,
     opt.wait_time,
@@ -65,16 +65,21 @@ pub fn AnimationSystem::add_simple(
 ///|
 fn animation_system_is_over_ffi(
   as_ptr : UInt64,
-  name_ptr : Int,
+  name_ptr : UInt64,
   name_len : Int,
-  is_over_ptr : Int
+  is_over_ptr : UInt64
 ) -> Bool = "lunar" "animation_system_is_over"
 
 ///|
 pub fn AnimationSystem::is_over(self : AnimationSystem, name : String) -> Bool? {
   let name_ptr = str2ptr(name)
   let bool_ptr = get_global_buf_ptr()
-  if animation_system_is_over_ffi(self.inner, name_ptr, name.length(), bool_ptr) {
+  if animation_system_is_over_ffi(
+      self.inner,
+      name_ptr.to_uint64(),
+      name.length(),
+      bool_ptr.to_uint64(),
+    ) {
     Some(load8_u(bool_ptr) > 0)
   } else {
     None
@@ -84,9 +89,9 @@ pub fn AnimationSystem::is_over(self : AnimationSystem, name : String) -> Bool? 
 ///|
 fn animation_system_is_stopped_ffi(
   as_ptr : UInt64,
-  name_ptr : Int,
+  name_ptr : UInt64,
   name_len : Int,
-  is_stopped_ptr : Int
+  is_stopped_ptr : UInt64
 ) -> Bool = "lunar" "animation_system_is_stopped"
 
 ///|
@@ -98,9 +103,9 @@ pub fn AnimationSystem::is_stopped(
   let bool_ptr = get_global_buf_ptr()
   if animation_system_is_stopped_ffi(
       self.inner,
-      name_ptr,
+      name_ptr.to_uint64(),
       name.length(),
-      bool_ptr,
+      bool_ptr.to_uint64(),
     ) {
     Some(load8_u(bool_ptr) > 0)
   } else {
@@ -111,19 +116,23 @@ pub fn AnimationSystem::is_stopped(
 ///|
 fn animation_system_reset_ffi(
   as_ptr : UInt64,
-  name_ptr : Int,
+  name_ptr : UInt64,
   name_len : Int
 ) -> Bool = "lunar" "animation_system_reset"
 
 ///|
 pub fn AnimationSystem::reset(self : AnimationSystem, name : String) -> Bool {
-  animation_system_reset_ffi(self.inner, str2ptr(name), name.length())
+  animation_system_reset_ffi(
+    self.inner,
+    str2ptr(name).to_uint64(),
+    name.length(),
+  )
 }
 
 ///|
 fn animation_system_set_stop_ffi(
   as_ptr : UInt64,
-  name_ptr : Int,
+  name_ptr : UInt64,
   name_len : Int,
   stop : Bool
 ) -> Bool = "lunar" "animation_system_set_stop"
@@ -134,15 +143,20 @@ pub fn AnimationSystem::set_stop(
   name : String,
   stop : Bool
 ) -> Bool {
-  animation_system_set_stop_ffi(self.inner, str2ptr(name), name.length(), stop)
+  animation_system_set_stop_ffi(
+    self.inner,
+    str2ptr(name).to_uint64(),
+    name.length(),
+    stop,
+  )
 }
 
 ///|
 fn animation_system_get_current_frame_ffi(
   as_ptr : UInt64,
-  name_ptr : Int,
+  name_ptr : UInt64,
   name_len : Int,
-  frame_data_ptr : Int
+  frame_data_ptr : UInt64
 ) -> Bool = "lunar" "animation_system_get_current_frame"
 
 ///|
@@ -153,9 +167,9 @@ pub fn AnimationSystem::get_current_frame(
   let frame_data_ptr = get_global_buf_ptr()
   if animation_system_get_current_frame_ffi(
       self.inner,
-      str2ptr(name),
+      str2ptr(name).to_uint64(),
       name.length(),
-      frame_data_ptr,
+      frame_data_ptr.to_uint64(),
     ) {
     Some(FrameData::readFrom(frame_data_ptr))
   } else {

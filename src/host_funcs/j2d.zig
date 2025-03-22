@@ -32,9 +32,9 @@ pub const FUNCS = [_]c.FuncDef{
     .{ "batch_submit_2d", batchSubmit, &.{I64}, &.{} },
     .{ "batch_push_transform_2d", batchPushTransform, &.{I64}, &.{I32} },
     .{ "batch_pop_transform_2d", batchPopTransform, &.{I64}, &.{} },
-    .{ "batch_set_transform_2d", batchSetTransform, &.{ I64, I32 }, &.{} },
-    .{ "batch_sprite_2d", batchSprite, &.{ I64, I32, I32 }, &.{I32} },
-    .{ "batch_push_draw_cmd_2d", batchPushDrawCmd, &.{ I64, I32 }, &.{I32} },
+    .{ "batch_set_transform_2d", batchSetTransform, &.{ I64, I64 }, &.{} },
+    .{ "batch_sprite_2d", batchSprite, &.{ I64, I64, I64 }, &.{I32} },
+    .{ "batch_push_draw_cmd_2d", batchPushDrawCmd, &.{ I64, I64 }, &.{I32} },
 } ++ animation_system.FUNCS ++ affine_transform.FUNCS ++ sprite_sheet.FUNCS ++ sprite.FUNCS;
 
 // [moonbit] fn batch_new_2d_ffi() -> UInt64 = "lunar" "batch_new_2d"

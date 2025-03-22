@@ -10,6 +10,7 @@ const Value = w.Value;
 const Ptr = w.Ptr;
 
 const I32 = w.WasmValKind.i32;
+const I64 = w.WasmValKind.i64;
 
 const newi32 = Value.newI32;
 const newi64 = Value.newI64;
@@ -17,7 +18,7 @@ const newf32 = Value.newF32;
 const newf64 = Value.newF64;
 
 pub const FUNCS = [_]c.FuncDef{
-    .{ "physfs_mount", mount, &.{ I32, I32, I32, I32, I32 }, &.{I32} },
+    .{ "physfs_mount", mount, &.{ I64, I32, I64, I32, I32 }, &.{I32} },
 };
 
 // [moonbit]

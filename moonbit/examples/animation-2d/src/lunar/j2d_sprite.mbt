@@ -9,12 +9,12 @@ pub struct Sprite {
 
 ///|
 fn sprite_get_sub_sprite_ffi(
-  sp_in_ptr : Int,
+  sp_in_ptr : UInt64,
   offset_x : Float,
   offset_y : Float,
   width : Float,
   height : Float,
-  sp_out_ptr : Int
+  sp_out_ptr : UInt64,
 ) = "lunar" "sprite_get_sub_sprite"
 
 ///|
@@ -60,6 +60,6 @@ pub fn Sprite::get_sub_sprite(
 ) -> Sprite {
   let ptr = get_global_buf_ptr()
   let ptr_out = ptr + self.writeTo(ptr)
-  sprite_get_sub_sprite_ffi(ptr, offset_x, offset_y, width, height, ptr_out)
+  sprite_get_sub_sprite_ffi(ptr.to_uint64(), offset_x, offset_y, width, height, ptr_out.to_uint64())
   Sprite::readFrom(ptr_out)
 }

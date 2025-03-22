@@ -176,7 +176,7 @@ pub const Value = extern struct {
     }
 
     pub fn toGuestPtr(self: *const Value) usize {
-        return @intCast(self.toNumber(u32));
+        return self.toNumber(usize);
     }
     pub fn toHostPtr(self: *const Value, comptime T: type) *T {
         const ptr_raw: *anyopaque = @ptrFromInt(self.toNumber(usize));

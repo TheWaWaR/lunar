@@ -20,7 +20,7 @@ const newf64 = Value.newF64;
 const newptr = Value.newPtr;
 
 pub const FUNCS = [_]c.FuncDef{
-    .{ "renderer_clear", clear, &.{ I64, I32 }, &.{I32} },
+    .{ "renderer_clear", clear, &.{ I64, I64 }, &.{I32} },
 };
 
 // fn renderer_clear_ffi(renderer_ptr: UInt64, color_ptr: Int) -> Bool = "lunar" "renderer_clear"

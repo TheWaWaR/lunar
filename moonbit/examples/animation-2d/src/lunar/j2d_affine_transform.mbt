@@ -5,20 +5,20 @@ pub struct AffineTransform {
 }
 
 ///|
-fn affine_transform_init_2d_ffi(mat_ptr : Int) = "lunar" "affine_transform_init_2d"
+fn affine_transform_init_2d_ffi(mat_ptr : UInt64) = "lunar" "affine_transform_init_2d"
 
 ///|
 pub fn AffineTransform::init() -> AffineTransform {
   let ptr = get_global_buf_ptr()
-  affine_transform_init_2d_ffi(ptr)
+  affine_transform_init_2d_ffi(ptr.to_uint64())
   AffineTransform::readFrom(ptr)
 }
 
 ///|
 fn affine_transform_translate_2d_ffi(
-  mat_in_ptr : Int,
-  pos_ptr : Int,
-  mat_out_ptr : Int
+  mat_in_ptr : UInt64,
+  pos_ptr : UInt64,
+  mat_out_ptr : UInt64
 ) = "lunar" "affine_transform_translate_2d"
 
 ///|
@@ -32,7 +32,7 @@ pub fn AffineTransform::translate(
   let pos_ptr = ptr
   ptr += pos.writeTo(ptr)
   let mat_out_ptr = ptr
-  affine_transform_translate_2d_ffi(mat_in_ptr, pos_ptr, mat_out_ptr)
+  affine_transform_translate_2d_ffi(mat_in_ptr.to_uint64(), pos_ptr.to_uint64(), mat_out_ptr.to_uint64())
   AffineTransform::readFrom(mat_out_ptr)
 }
 

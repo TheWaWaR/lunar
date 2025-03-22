@@ -19,10 +19,10 @@ const newf64 = Value.newF64;
 const newptr = Value.newPtr;
 
 pub const FUNCS = [_]c.FuncDef{
-    .{ "debug_print", debugPrint, &.{ I32, I32, I32, I32 }, &.{} },
+    .{ "debug_print", debugPrint, &.{ I64, I32, I64, I64 }, &.{} },
     .{ "kill", kill, &.{}, &.{} },
     .{ "delta_seconds", deltaSeconds, &.{}, &.{F32} },
-    .{ "get_canvas_size", getCanvasSize, &.{ I32, I32 }, &.{} },
+    .{ "get_canvas_size", getCanvasSize, &.{ I64, I64 }, &.{} },
     .{ "get_renderer", getRenderer, &.{}, &.{I64} },
     .{ "display_stats", displayStats, &.{}, &.{} },
 };
