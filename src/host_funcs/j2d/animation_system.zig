@@ -146,11 +146,11 @@ fn isStopped(args: []const Value, results: []Value) ?Ptr {
     results[0] = newi32(0);
     const as = args[0].toHostPtr(AnimationSystem);
     const name = c.readFromUtf16StrWithApp(args[1..3]) orelse return null;
-    const is_over = as.isOver(name) catch |err| {
+    const is_stopped = as.isStopped(name) catch |err| {
         std.log.err("AnimationSystem.isStopped({s}) error: {}", .{ name, err });
         return null;
     };
-    c.writeBoolArg(&args[3], is_over);
+    c.writeBoolArg(&args[3], is_stopped);
     results[0] = newi32(1);
     return null;
 }

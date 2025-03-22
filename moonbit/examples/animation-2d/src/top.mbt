@@ -97,7 +97,7 @@ pub fn lunar_init() -> Unit {
               0,
             ),
             num_segments=80,
-            thickness=6.0,
+            thickness=3.0,
           ),
         ),
         0.5,
@@ -153,7 +153,6 @@ pub fn lunar_update() -> Unit {
   pos.val = Point::new(pos_x, pos_y)
   if force_replay && anim_sys.val.is_over(animation.val).unwrap() {
     let _success = anim_sys.val.reset(animation.val)
-    @lunar.log("setStop(player_circle_bg, false)")
     let _success = anim_sys.val.set_stop("player_circle_bg", false)
 
   }
@@ -205,7 +204,6 @@ pub fn lunar_quit() -> Unit {
 
 ///| Receive AnimationSystem signal callback
 pub fn lunar_signal() -> Unit {
-  @lunar.log("setStop(player_circle_bg, true)")
   let _success = anim_sys.val.set_stop("player_circle_bg", true)
 
 }
