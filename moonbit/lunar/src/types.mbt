@@ -5,9 +5,9 @@ pub struct ZigSlice {
 }
 
 ///|
-pub struct Point {
-  x : Float
-  y : Float
+pub(all) struct Point {
+  mut x : Float
+  mut y : Float
 } derive(Show)
 
 ///|

@@ -127,30 +127,27 @@ pub fn lunar_update() -> Unit {
     return
   }
   let mut force_replay = false
-  let mut pos_x = pos.val.x
-  let mut pos_y = pos.val.y
   if kbd.is_pressed(@lunar.SDL_SCANCODE_W) {
-    pos_y -= velocity * @lunar.delta_seconds()
+    pos.val.y -= velocity * @lunar.delta_seconds()
     animation.val = "player_up"
     flip_h.val = false
     force_replay = true
   } else if kbd.is_pressed(@lunar.SDL_SCANCODE_S) {
-    pos_y += velocity * @lunar.delta_seconds()
+    pos.val.y += velocity * @lunar.delta_seconds()
     animation.val = "player_down"
     flip_h.val = false
     force_replay = true
   } else if kbd.is_pressed(@lunar.SDL_SCANCODE_D) {
-    pos_x += velocity * @lunar.delta_seconds()
+    pos.val.x += velocity * @lunar.delta_seconds()
     animation.val = "player_left_right"
     flip_h.val = true
     force_replay = true
   } else if kbd.is_pressed(@lunar.SDL_SCANCODE_A) {
-    pos_x -= velocity * @lunar.delta_seconds()
+    pos.val.x -= velocity * @lunar.delta_seconds()
     animation.val = "player_left_right"
     flip_h.val = false
     force_replay = true
   }
-  pos.val = Point::new(pos_x, pos_y)
   if force_replay && anim_sys.val.is_over(animation.val).unwrap() {
     let _success = anim_sys.val.reset(animation.val)
     let _success = anim_sys.val.set_stop("player_circle_bg", false)
